@@ -1,0 +1,74 @@
+# =============================================================================
+# Configuração de ambiente — Repositório Digital CAVN (Produção)
+# =============================================================================
+# Copie este arquivo para .env e preencha todos os valores obrigatórios antes
+# de executar o deploy.
+#
+# Gere uma SECRET_KEY forte com:
+#   python -c "import secrets; print(secrets.token_urlsafe(50))"
+# =============================================================================
+
+# Backend
+SECRET_KEY=ALTERE-ESSA-CHAVE-GERE-UMA-NOVA
+DEBUG=False
+ALLOWED_HOSTS=bibliotecadigital.cchsa-cavn.tec.br
+CSRF_TRUSTED_ORIGINS=https://bibliotecadigital.cchsa-cavn.tec.br
+CORS_ALLOWED_ORIGINS=https://bibliotecadigital.cchsa-cavn.tec.br
+SITE_URL=https://bibliotecadigital.cchsa-cavn.tec.br
+# Path customizado para o Django Admin. Atualize também o location do Nginx do host.
+ADMIN_URL=gerencia/
+
+# Banco de dados
+DB_ENGINE=postgresql
+DB_NAME=cavn_digital
+DB_USER=cavn_digital
+DB_PASSWORD=ALTERE-ESSA-SENHA-FORTE
+DB_HOST=db
+DB_PORT=5432
+
+# Redis
+# O container Redis em docker-compose.prod.yml exige senha (--requirepass).
+# A senha deve ser informada em todas as URLs abaixo.
+REDIS_PASSWORD=ALTERE-ESSA-SENHA-FORTE-DO-REDIS
+REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
+CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/2
+
+# Segurança (ativar após configurar SSL no Nginx do host)
+SECURE_SSL_REDIRECT=True
+SECURE_HSTS_SECONDS=31536000
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+
+# Uploads
+MAX_UPLOAD_SIZE_BYTES=104857600
+DATA_UPLOAD_MAX_MEMORY_SIZE=104857600
+FILE_UPLOAD_MAX_MEMORY_SIZE=104857600
+ALLOW_ARCHIVE_UPLOADS=True
+MAX_ZIP_ENTRIES=1000
+MAX_ZIP_UNCOMPRESSED_SIZE_BYTES=314572800
+MAX_ZIP_COMPRESSION_RATIO=100
+
+# E-mail (configure para enviar notificações reais)
+EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+EMAIL_HOST=smtp.exemplo.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=usuario@exemplo.com
+EMAIL_HOST_PASSWORD=senha-do-email
+DEFAULT_FROM_EMAIL=noreply@cavn.ufpb.br
+
+# Account lockout (django-axes)
+AXES_FAILURE_LIMIT=5
+AXES_COOLOFF_TIME_MINUTES=15
+
+# Monitoramento (opcional)
+SENTRY_DSN=
+SENTRY_ENVIRONMENT=production
+SENTRY_TRACES_SAMPLE_RATE=0.1
+SENTRY_PROFILES_SAMPLE_RATE=0.05
+
+# Frontend
+VITE_API_URL=/api/v1
+VITE_SITE_URL=https://bibliotecadigital.cchsa-cavn.tec.br
+VITE_FEEDBACK_FORM_URL=https://forms.gle/example

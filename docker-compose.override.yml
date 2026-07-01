@@ -1,0 +1,22 @@
+# =============================================================================
+# Override de desenvolvimento para Docker Compose.
+# Copia o código-fonte do backend como volume e ativa reload automático,
+# evitando rebuilds a cada alteração.
+#
+# Uso:
+#   docker compose up -d
+#
+# Para forçar rebuild (quando mudar requirements.txt ou Dockerfile):
+#   docker compose up -d --build
+# =============================================================================
+services:
+  backend:
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             (test \"$${RUN_SEED_DATA}\" = \"true\" && python manage.py seed_data || true) &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --reload --access-logfile -"
+    environment:
+      DEBUG: "True"

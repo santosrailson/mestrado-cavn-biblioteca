@@ -1,0 +1,257 @@
+# =============================================================================
+# Docker Compose — Produção
+# =============================================================================
+# Todos os serviços (backend, frontend, db, redis, celery) rodam em Docker.
+# O Nginx do host atua como reverse proxy com SSL, encaminhando:
+#   - rotas do site → frontend:80
+#   - /api/v1, /django-admin/ → backend:8000
+#   - /static/, /media/ → servidos diretamente pelo Nginx do host
+#
+# Subir com: docker compose -f docker-compose.prod.yml up -d --build
+# =============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cavn-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cavn_digital}
+      POSTGRES_USER: ${DB_USER:-cavn_digital}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cavn_digital} -d ${DB_NAME:-cavn_digital}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cavn-redis
+    restart: unless-stopped
+    command: >
+      sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
+        redis-server --requirepass "$$REDIS_PASSWORD";
+      else
+        echo "REDIS_PASSWORD não configurada" >&2;
+        exit 1;
+      fi'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      - backend
+    healthcheck:
+      test: >
+        sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
+          redis-cli -a "$$REDIS_PASSWORD" ping;
+        else
+          redis-cli ping;
+        fi'
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cavn-backend
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --worker-class gthread --threads 2 --access-logfile -"
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-cavn_digital}
+      DB_USER: ${DB_USER:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      # As configurações HTTPS/HSTS/cookies seguros são forçadas pelo Django quando
+      # DEBUG=False. Não defina defaults inseguros aqui.
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT}
+      SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE}
+      ADMIN_URL: ${ADMIN_URL:-gerencia/}
+      AXES_FAILURE_LIMIT: ${AXES_FAILURE_LIMIT:-5}
+      AXES_COOLOFF_TIME_MINUTES: ${AXES_COOLOFF_TIME_MINUTES:-15}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      SENTRY_PROFILES_SAMPLE_RATE: ${SENTRY_PROFILES_SAMPLE_RATE:-0.05}
+    volumes:
+      - ./backend/media:/app/media
+      - ./backend/staticfiles:/app/staticfiles
+      - ./backend/logs:/app/logs
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - backend
+      - database
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cavn-celery-worker
+    restart: unless-stopped
+    command: celery -A config worker -l info
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-cavn_digital}
+      DB_USER: ${DB_USER:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      SENTRY_PROFILES_SAMPLE_RATE: ${SENTRY_PROFILES_SAMPLE_RATE:-0.05}
+    volumes:
+      - ./backend/media:/app/media
+      - ./backend/logs:/app/logs
+    networks:
+      - backend
+      - database
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cavn-celery-beat
+    restart: unless-stopped
+    command: celery -A config beat -l info
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG:-False}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-cavn_digital}
+      DB_USER: ${DB_USER:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+      SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+      SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
+      SENTRY_PROFILES_SAMPLE_RATE: ${SENTRY_PROFILES_SAMPLE_RATE:-0.05}
+    volumes:
+      - ./backend/media:/app/media
+      - ./backend/logs:/app/logs
+    networks:
+      - backend
+      - database
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  flower:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cavn-flower
+    restart: unless-stopped
+    command: celery -A config flower --port=5555 --url-prefix=flower
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: "False"
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-cavn_digital}
+      DB_USER: ${DB_USER:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      FLOWER_BASIC_AUTH: ${FLOWER_BASIC_AUTH}
+    ports:
+      - "127.0.0.1:5555:5555"
+    networks:
+      - backend
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api/v1
+        VITE_SITE_URL: ${SITE_URL:-https://bibliotecadigital.cchsa-cavn.tec.br}
+    container_name: cavn-frontend
+    restart: unless-stopped
+    volumes:
+      - ./backend/media:/usr/share/nginx/media:ro
+      - ./backend/staticfiles:/usr/share/nginx/static:ro
+    ports:
+      - "127.0.0.1:3000:80"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+  database:
+    driver: bridge
+    internal: true

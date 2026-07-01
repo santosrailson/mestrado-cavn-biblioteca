@@ -1,0 +1,27 @@
+# Proteger arquivos e diretórios do ambiente de produção
+protect .env
+protect .env.*
+protect backend/.env
+protect frontend/.env
+
+# Proteger dados persistentes
+protect backend/media/
+protect backend/staticfiles/
+protect backend/logs/
+protect backend/db.sqlite3
+
+# Proteger ambientes virtuais locais
+protect .venv/
+protect backend/.venv/
+protect venv/
+
+# Ignorar diretórios que não devem ser enviados
+- node_modules/
+- dist/
+- .git/
+- __pycache__/
+- *.pyc
+- .DS_Store
+- .pytest_cache/
+- .mypy_cache/
+- *.log

@@ -1,0 +1,90 @@
+# =============================================================================
+# Repositório Digital CAVN — .gitignore
+# =============================================================================
+
+# ----- Segredos e variáveis de ambiente -----
+.env
+.env.*
+!.env.example
+!.env.*.example
+# Exemplos que DEVEM ser versionados são mantidos acima via negação.
+
+# ----- Sistema operacional / editores -----
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*~
+
+# ----- Sessões e logs de ferramentas -----
+kimi-session.txt
+*.session.txt
+*.log
+docker-build.log
+
+# =============================================================================
+# Backend (Python / Django)
+# =============================================================================
+
+# Bytecode e caches
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+
+# Ambientes virtuais
+.venv/
+.venv-*/
+venv/
+env/
+
+# Caches de ferramentas
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.cover
+
+# Banco de dados local (dev)
+*.sqlite3
+db.sqlite3
+
+# Arquivos gerados em runtime
+backend/media/
+backend/staticfiles/
+backend/logs/
+
+# =============================================================================
+# Frontend (Node / React / Vite)
+# =============================================================================
+
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs de gerenciadores de pacotes
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Cache do Vite
+.vite/
+
+# Testes / Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+frontend/playwright/.cache/
+frontend/e2e/.auth/
+
+# =============================================================================
+# Docker / infraestrutura
+# =============================================================================
+*.pid

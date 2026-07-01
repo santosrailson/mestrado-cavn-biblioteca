@@ -1,0 +1,114 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cavn-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-cavn_digital}
+      POSTGRES_USER: ${DB_USER:-cavn_digital}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cavn_digital} -d ${DB_NAME:-cavn_digital}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cavn-redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6380:6379"
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cavn-backend
+    restart: unless-stopped
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             (test \"$${RUN_SEED_DATA}\" = \"true\" && python manage.py seed_data || true) &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --access-logfile -"
+    environment:
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      DEBUG: ${DEBUG:-False}
+      DB_ENGINE: postgresql
+      DB_NAME: ${DB_NAME:-cavn_digital}
+      DB_USER: ${DB_USER:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_HOST: db
+      DB_PORT: 5432
+      REDIS_URL: redis://redis:6379/0
+      CORS_ALLOWED_ORIGINS: http://localhost,http://localhost:5173,http://localhost:80,http://frontend
+      ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      CSRF_TRUSTED_ORIGINS: http://localhost,http://localhost:5173,http://localhost:80
+      RUN_SEED_DATA: ${RUN_SEED_DATA:-false}
+      AXES_FAILURE_LIMIT: ${AXES_FAILURE_LIMIT:-5}
+      AXES_COOLOFF_TIME_MINUTES: ${AXES_COOLOFF_TIME_MINUTES:-15}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
+    volumes:
+      - ./backend/media:/app/media
+      - ./backend/staticfiles:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+      - database
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cavn-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000/api/v1
+      VITE_SITE_URL: http://localhost
+    volumes:
+      - ./backend/media:/usr/share/nginx/media:ro
+      - ./backend/staticfiles:/usr/share/nginx/static:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - frontend
+      - backend
+
+volumes:
+  postgres_data:
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+  database:
+    driver: bridge

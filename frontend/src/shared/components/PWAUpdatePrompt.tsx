@@ -1,0 +1,67 @@
+import { useState, useEffect } from 'react';
+import ptBR from '@/shared/i18n/pt-BR';
+
+export function PWAUpdatePrompt() {
+  const [needRefresh, setNeedRefresh] = useState(false);
+  const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        setRegistration(reg);
+
+        reg.addEventListener('updatefound', () => {
+          const installingWorker = reg.installing;
+          if (installingWorker) {
+            installingWorker.addEventListener('statechange', () => {
+              if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setNeedRefresh(true);
+              }
+            });
+          }
+        });
+      });
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    }
+  }, []);
+
+  const handleUpdate = () => {
+    if (registration?.waiting) {
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    }
+    setNeedRefresh(false);
+  };
+
+  const handleDismiss = () => {
+    setNeedRefresh(false);
+  };
+
+  if (!needRefresh) return null;
+
+  return (
+    <div
+      className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-primary bg-surface p-4 shadow-lg"
+      role="alert"
+    >
+      <p className="text-sm text-text">{ptBR.pwa.updateAvailable}</p>
+      <button
+        type="button"
+        onClick={handleUpdate}
+        className="btn-primary text-xs"
+      >
+        {ptBR.pwa.update}
+      </button>
+      <button
+        type="button"
+        onClick={handleDismiss}
+        className="ml-2 text-sm text-text-muted hover:text-text"
+        aria-label="Fechar"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
