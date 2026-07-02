@@ -2,7 +2,16 @@
 
 from rest_framework import serializers
 
+from apps.documents.models import Document
 from apps.timeline.models import TimelineEvent
+
+
+class TimelineEventDocumentSerializer(serializers.ModelSerializer):
+    """Mini-representação do documento vinculado a um evento de timeline."""
+
+    class Meta:
+        model = Document
+        fields = ["id", "titulo", "slug"]
 
 
 class TimelineEventSerializer(serializers.ModelSerializer):
@@ -12,6 +21,7 @@ class TimelineEventSerializer(serializers.ModelSerializer):
         source="get_data_precisao_display",
         read_only=True,
     )
+    documento = TimelineEventDocumentSerializer(read_only=True)
     documento_titulo = serializers.CharField(
         source="documento.titulo",
         read_only=True,

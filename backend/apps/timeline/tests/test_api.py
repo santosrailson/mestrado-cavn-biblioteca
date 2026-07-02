@@ -2,7 +2,8 @@ import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
 
-from apps.core.constants import UserRole
+from apps.core.constants import DocumentStatus, UserRole
+from apps.documents.models import Document
 from apps.timeline.models import TimelineEvent
 from apps.users.models import User
 
@@ -86,3 +87,50 @@ def test_create_evento_authenticated(api_client, curador):
     )
     assert response.status_code == 201
     assert TimelineEvent.objects.filter(titulo="Novo evento").exists()
+
+
+def _criar_documento_publicado(titulo: str, slug: str) -> Document:
+    return Document.objects.create(
+        titulo=titulo,
+        slug=slug,
+        status=DocumentStatus.PUBLISHED,
+        tipo_documento="outro",
+        data_precisao="dia",
+        idioma="pt-BR",
+    )
+
+
+@pytest.mark.django_db
+def test_evento_com_documento_expoe_slug_e_titulo(api_client):
+    documento = _criar_documento_publicado("Termo de compromisso", "termo-de-compromisso")
+    evento = TimelineEvent.objects.create(
+        titulo="Fundação do CAVN",
+        data_evento="1960-03-15",
+        destaque=True,
+        documento=documento,
+    )
+
+    response = api_client.get("/api/v1/timeline/eventos/")
+    assert response.status_code == 200
+
+    item = next(e for e in response.data if e["id"] == str(evento.pk))
+    assert item["documento"] is not None
+    assert item["documento"]["id"] == str(documento.pk)
+    assert item["documento"]["titulo"] == documento.titulo
+    assert item["documento"]["slug"] == documento.slug
+
+
+@pytest.mark.django_db
+def test_evento_sem_documento_mantem_documento_nulo(api_client):
+    TimelineEvent.objects.create(
+        titulo="Evento isolado",
+        data_evento="1960-03-15",
+        destaque=True,
+        documento=None,
+    )
+
+    response = api_client.get("/api/v1/timeline/eventos/")
+    assert response.status_code == 200
+
+    item = next(e for e in response.data if e["titulo"] == "Evento isolado")
+    assert item["documento"] is None
