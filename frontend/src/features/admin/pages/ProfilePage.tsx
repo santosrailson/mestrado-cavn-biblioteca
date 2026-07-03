@@ -82,8 +82,9 @@ function AdminPasswordForm() {
       setSenhaAtual('');
       setNovaSenha('');
       setConfirmar('');
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Erro ao alterar senha.');
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      setError(axiosError?.response?.data?.detail ?? 'Erro ao alterar senha.');
     } finally {
       setLoading(false);
     }
@@ -143,8 +144,9 @@ function UserPasswordRequestForm() {
       setNovaSenha('');
       setConfirmar('');
       refetch();
-    } catch (err: any) {
-      setError(err?.response?.data?.detail ?? 'Erro ao enviar solicitação.');
+    } catch (err: unknown) {
+      const axiosError = err as { response?: { data?: { detail?: string } } };
+      setError(axiosError?.response?.data?.detail ?? 'Erro ao enviar solicitação.');
     } finally {
       setLoading(false);
     }

@@ -109,7 +109,7 @@ test.describe('Fluxos completos com dados mockados', () => {
       { path: '/acessibilidade', label: 'Acessibilidade' },
     ];
 
-    for (const { path, label } of pages) {
+    for (const { path } of pages) {
       await page.goto(path);
       await page.waitForTimeout(300);
       const ok = page.url().includes(path) || page.url().includes('/login');

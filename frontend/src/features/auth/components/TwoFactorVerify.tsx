@@ -59,6 +59,7 @@ export function TwoFactorVerify({ userId, email, onVerified, onCancel }: TwoFact
           onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))}
           className="input text-center text-2xl tracking-[0.5em]"
           placeholder="000000"
+          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
       </div>
