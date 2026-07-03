@@ -4,6 +4,14 @@ Mantém a maior parte do settings de produção/desenvolvimento, mas remove
 comportamentos de borda que atrapalham testes de API no test client.
 """
 
+import os
+
+# Garante valores mínimos antes de importar o settings base, evitando que
+# as validações de produção (DEBUG=False / ALLOWED_HOSTS vazio) disparem
+# durante o import em ambientes sem um arquivo .env configurado.
+os.environ["DEBUG"] = "True"
+os.environ["ALLOWED_HOSTS"] = "*"
+
 from .settings import *  # noqa: F401,F403
 
 DEBUG = True
