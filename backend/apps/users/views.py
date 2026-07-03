@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.users.models import User
-from apps.users.permissions import IsAdministrator
+from apps.users.permissions import IsAdministrator, IsOwnerOrAdministrator
 from apps.users.serializers import (
     UserCreateSerializer,
     UserSerializer,
@@ -196,10 +196,10 @@ class UserViewSet(
     pagination_class = None
 
     def get_permissions(self):
-        if self.action in ["list", "retrieve"]:
+        if self.action in ["list", "destroy", "create"]:
             return [IsAdministrator()]
-        if self.action in ["create", "destroy", "update", "partial_update"]:
-            return [IsAdministrator()]
+        if self.action in ["retrieve", "update", "partial_update"]:
+            return [IsAuthenticated(), IsOwnerOrAdministrator()]
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -257,8 +257,9 @@ def alterar_propria_senha(request):
 @permission_classes([IsAuthenticated])
 def solicitar_alteracao_senha(request):
     """Usuário não-admin envia solicitação de troca de senha para aprovação."""
-    from apps.users.models import SolicitacaoAlteracaoSenha
     from django.contrib.auth.hashers import make_password
+
+    from apps.users.models import SolicitacaoAlteracaoSenha
 
     user = request.user
     if user.can_administer():
@@ -330,9 +331,10 @@ def listar_solicitacoes_senha(request):
 @permission_classes([IsAuthenticated])
 def aprovar_solicitacao_senha(request, pk):
     """Admin aprova uma solicitação e aplica a nova senha."""
-    from apps.users.models import SolicitacaoAlteracaoSenha
     from django.shortcuts import get_object_or_404
     from django.utils.timezone import now
+
+    from apps.users.models import SolicitacaoAlteracaoSenha
 
     if not request.user.can_administer():
         return Response(status=status.HTTP_403_FORBIDDEN)
@@ -352,9 +354,10 @@ def aprovar_solicitacao_senha(request, pk):
 @permission_classes([IsAuthenticated])
 def rejeitar_solicitacao_senha(request, pk):
     """Admin rejeita uma solicitação de troca de senha."""
-    from apps.users.models import SolicitacaoAlteracaoSenha
     from django.shortcuts import get_object_or_404
     from django.utils.timezone import now
+
+    from apps.users.models import SolicitacaoAlteracaoSenha
 
     if not request.user.can_administer():
         return Response(status=status.HTTP_403_FORBIDDEN)

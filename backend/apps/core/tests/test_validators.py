@@ -1,7 +1,7 @@
 """Testes para os validadores de upload do core."""
 
-from io import BytesIO
 import zipfile
+from io import BytesIO
 
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile

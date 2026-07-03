@@ -13,7 +13,7 @@ from PIL import Image
 
 from apps.academic.models import ProducaoAcademica
 from apps.categories.models import Categoria
-from apps.core.constants import DatePrecision, DocumentStatus, FileType, UserRole
+from apps.core.constants import DocumentStatus, FileType, UserRole
 from apps.core.utils import calculate_sha256, generate_unique_slug
 from apps.documents.models import (
     Arquivo,

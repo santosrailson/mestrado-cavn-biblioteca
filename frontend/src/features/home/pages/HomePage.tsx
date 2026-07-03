@@ -26,6 +26,7 @@ import { CreateButton } from '@/features/admin/components/CreateButton';
 import { EditButton } from '@/features/admin/components/EditButton';
 import { TimelineCard } from '@/features/timeline/components/TimelineCard';
 import { lazy, Suspense } from 'react';
+import { Loading } from '@/shared/components/Loading';
 import { CategoryFormModal } from '@/features/admin/components/CategoryFormModal';
 import { TimelineEventFormModal } from '@/features/admin/components/TimelineEventFormModal';
 
@@ -149,7 +150,7 @@ export function HomePage() {
             />
           )}
           {categories && categories.length > 0 && (
-            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" role="list">
+            <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {categories
                 .filter((c) => c.ativo)
                 .slice(0, 8)
@@ -287,7 +288,7 @@ export function HomePage() {
         </Section>
       </main>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<Loading />}>
         <DocumentFormModal
           isOpen={documentModalOpen}
           onClose={() => setDocumentModalOpen(false)}

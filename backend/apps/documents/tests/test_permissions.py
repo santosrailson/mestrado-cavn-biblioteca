@@ -129,7 +129,6 @@ class TestDocumentPermissions:
             motivo_rejeicao="Ajustar metadados",
         )
         # Rejeitado → Rascunho é válido, e depois rascunho → em_revisao
-        from apps.documents.services import DocumentWorkflowService, WorkflowError
 
         api_client.force_authenticate(user=catalogador)
         response = api_client.post(f"/api/v1/documentos/{doc.slug}/submeter/")

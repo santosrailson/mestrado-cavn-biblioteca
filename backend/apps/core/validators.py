@@ -8,7 +8,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-
 # Extensões permitidas por categoria de risco.
 # Evita uploads de executáveis, scripts e outros arquivos perigosos.
 ALLOWED_EXTENSIONS = {

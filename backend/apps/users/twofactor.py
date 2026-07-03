@@ -1,13 +1,11 @@
 """Views para autenticação de dois fatores (2FA) com TOTP."""
 
 import base64
-import io
 
 import pyotp
 import qrcode
 from django.conf import settings
 from django.middleware.csrf import get_token
-from django.utils.timezone import now
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes

@@ -36,11 +36,11 @@ class IsCataloguer(permissions.BasePermission):
         )
 
 
-class IsOwnerOrReadOnly(permissions.BasePermission):
-    """Permite edição apenas ao próprio usuário."""
+class IsOwnerOrAdministrator(permissions.BasePermission):
+    """Permite acesso ao próprio usuário ou a administradores."""
 
     def has_object_permission(self, request, view, obj):
-        if request.method in permissions.SAFE_METHODS:
+        if request.user and request.user.is_authenticated and request.user.is_administrator:
             return True
         return obj == request.user
 

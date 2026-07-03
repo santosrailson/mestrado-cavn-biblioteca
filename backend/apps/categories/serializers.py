@@ -43,10 +43,29 @@ class CategoriaSerializer(serializers.ModelSerializer):
         read_only_fields = ["slug", "full_path", "children", "pai", "contagemDocumentos"]
 
     def get_children(self, obj):
-        queryset = obj.children.filter(ativo=True)
-        return CategoriaSerializer(queryset, many=True).data
+        # Usa filhos pré-carregados via Prefetch quando disponíveis.
+        children = getattr(obj, "_prefetched_children_cache", None)
+        if children is None:
+            children = obj.children.filter(ativo=True)
+        else:
+            children = [c for c in children if getattr(c, "ativo", True)]
+        return CategoriaSerializer(children, many=True).data
 
     def get_pai(self, obj):
-        if obj.parent:
-            return {"id": str(obj.parent.id), "nome": obj.parent.nome}
+        # Usa pai pré-carregado via Prefetch.
+        parent_cache = getattr(obj, "_prefetched_parent_cache", None)
+        if parent_cache is not None:
+            # Prefetch de FK retorna QuerySet, mas pode ter sido convertido.
+            if isinstance(parent_cache, Categoria):
+                parent = parent_cache
+            else:
+                parent = next(iter(parent_cache), None)
+                if parent is None or parent.id != obj.parent_id:
+                    parent = None
+        elif obj.parent_id:
+            parent = obj.parent
+        else:
+            parent = None
+        if parent:
+            return {"id": str(parent.id), "nome": parent.nome}
         return None

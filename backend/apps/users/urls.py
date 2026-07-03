@@ -3,8 +3,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from apps.users import views
-from apps.users import twofactor
+from apps.users import twofactor, views
 
 router = DefaultRouter()
 router.register(r"usuarios", views.UserViewSet, basename="usuarios")

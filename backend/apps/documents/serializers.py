@@ -2,7 +2,9 @@
 
 from rest_framework import serializers
 
+from apps.categories.models import Categoria
 from apps.categories.serializers import CategoriaSerializer
+from apps.core.utils import generate_unique_slug
 from apps.documents.models import (
     Arquivo,
     Autor,
@@ -15,7 +17,6 @@ from apps.documents.models import (
 from apps.tags.models import Tag
 from apps.tags.serializers import TagSerializer
 from apps.users.serializers import UserSerializer
-from apps.core.utils import generate_unique_slug
 
 
 class DocumentoRelacionadoSerializer(serializers.ModelSerializer):

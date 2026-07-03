@@ -4,7 +4,6 @@ from rest_framework.test import APIClient
 from apps.core.constants import DocumentStatus, UserRole
 from apps.documents.models import Document
 from apps.documents.serializers import (
-    DocumentListSerializer,
     DocumentWriteSerializer,
 )
 from apps.users.tests.factories import UserFactory

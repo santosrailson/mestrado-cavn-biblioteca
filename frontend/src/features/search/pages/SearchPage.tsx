@@ -14,6 +14,7 @@ import { useSearch } from '@/shared/hooks/useSearch';
 import { useCategories } from '@/shared/hooks/useCategories';
 import { useEditable } from '@/features/admin/hooks/useEditable';
 import { lazy, Suspense } from 'react';
+import { Loading } from '@/shared/components/Loading';
 import { CreateButton } from '@/features/admin/components/CreateButton';
 import { TipoDocumento } from '@/shared/types';
 import ptBR from '@/shared/i18n/pt-BR';
@@ -314,7 +315,7 @@ export function SearchPage() {
         </div>
       </main>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<Loading />}>
         <DocumentFormModal
           isOpen={documentModalOpen}
           onClose={() => setDocumentModalOpen(false)}

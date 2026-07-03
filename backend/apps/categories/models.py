@@ -46,6 +46,20 @@ class Categoria(SlugModel):
 
     def get_full_path(self):
         """Retorna a hierarquia completa da categoria."""
-        if self.parent:
-            return f"{self.parent.get_full_path()} > {self.nome}"
+        # Usa pai pré-carregado quando disponível (evita N+1 em serializers).
+        parent_cache = getattr(self, "_prefetched_parent_cache", None)
+        if parent_cache is not None:
+            if isinstance(parent_cache, Categoria):
+                parent = parent_cache
+            else:
+                parent = next(iter(parent_cache), None)
+                if parent is not None and parent.id != self.parent_id:
+                    parent = None
+        elif self.parent_id:
+            parent = self.parent
+        else:
+            parent = None
+
+        if parent:
+            return f"{parent.get_full_path()} > {self.nome}"
         return self.nome

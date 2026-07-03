@@ -1,16 +1,20 @@
 """ViewSets e views para documentos e arquivos."""
 
 from django.contrib.postgres.search import SearchQuery, SearchRank
+from django.core.exceptions import PermissionDenied
 from django.db import connection
-from django.db.models import F, Q, Prefetch
+from django.db.models import Count, Prefetch, Q
+from django.db.models import F as _F
 from django.http import HttpResponse
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.categories.models import Categoria
+from apps.core.cache import cached_response
 from apps.documents.filters import DocumentFilter
 from apps.documents.models import Arquivo, Autor, Document, DocumentoRelacionado
 from apps.documents.permissions import CanApproveDocument, CanEditDocument
@@ -25,7 +29,6 @@ from apps.documents.serializers import (
 from apps.documents.services import DocumentWorkflowService, WorkflowError
 from apps.documents.tasks import processar_arquivo_async
 from apps.users.permissions import IsCataloguer
-from rest_framework.permissions import AllowAny
 
 
 class DocumentViewSet(viewsets.ModelViewSet):
@@ -54,20 +57,71 @@ class DocumentViewSet(viewsets.ModelViewSet):
                 tipo_arquivo="original", mime_type__startswith="image/"
             ).select_related("documento"),
             to_attr="capas",
+        )  # type: ignore
+
+        # Prefetch usado em listagens e também como base do retrieve.
+        categorias_prefetch = Prefetch(
+            "categorias",
+            queryset=Categoria.objects.filter(ativo=True)
+            .annotate(
+                contagem_documentos=Count(
+                    "categoria_documentos",
+                    filter=Q(
+                        categoria_documentos__documento__status="publicado",
+                        categoria_documentos__documento__deleted_at__isnull=True,
+                    ),
+                    distinct=True,
+                )
+            )
+            .prefetch_related(
+                Prefetch(
+                    "parent",
+                    queryset=Categoria.objects.all(),
+                    to_attr="_prefetched_parent_cache",
+                ),
+                Prefetch(
+                    "children",
+                    queryset=Categoria.objects.filter(ativo=True),
+                    to_attr="_prefetched_children_cache",
+                ),
+            ),
         )
 
-        qs = qs.prefetch_related(capa_prefetch, "autores", "categorias", "tags")
+        qs = qs.prefetch_related(
+            capa_prefetch,
+            "autores",
+            categorias_prefetch,
+            "tags",
+        )
 
         if self.action == "retrieve":
             qs = qs.select_related("created_by", "aprovado_por").prefetch_related(
                 "arquivos",
                 Prefetch(
                     "relacionamentos_origem",
-                    queryset=DocumentoRelacionado.objects.select_related("documento_destino"),
+                    queryset=DocumentoRelacionado.objects.select_related(
+                        "documento_destino"
+                    ).prefetch_related(
+                        Prefetch(
+                            "documento_destino__arquivos",
+                            queryset=Arquivo.objects.filter(
+                                tipo_arquivo="original", mime_type__startswith="image/"
+                            ).select_related("documento"),
+                            to_attr="capas",
+                        )
+                    ),
                 ),
             )
 
         return qs
+
+    @cached_response("documents:list", ttl=120)
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @cached_response("documents:detail", ttl=300)
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
@@ -212,13 +266,20 @@ class ArquivoViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsCataloguer()]
+            return [IsAuthenticated(), CanEditDocument()]
         # Leituras são públicas; o queryset já filtra por documentos publicados.
         return [AllowAny()]
 
     def perform_create(self, serializer):
         arquivo = serializer.save()
         processar_arquivo_async.delay(str(arquivo.pk))
+
+    def perform_destroy(self, instance):
+        documento = instance.documento
+        user = self.request.user
+        if not user.can_edit_document(documento):
+            raise PermissionDenied("Você não tem permissão para remover este arquivo.")
+        instance.delete()
 
     @action(detail=True, methods=["get"], url_path="download")
     def download(self, request, pk=None):
@@ -283,6 +344,7 @@ class BuscaViewSet(viewsets.GenericViewSet):
 
     serializer_class = DocumentListSerializer
 
+    @cached_response("search", ttl=120)
     def list(self, request):
         query = request.query_params.get("q", "").strip()
         capa_prefetch = Prefetch(
@@ -309,7 +371,7 @@ class BuscaViewSet(viewsets.GenericViewSet):
                         | Q(titulo__icontains=query)
                         | Q(arquivos__conteudo_ocr__icontains=query)
                     )
-                    .annotate(rank=SearchRank(F("search_vector"), search_query))
+                    .annotate(rank=SearchRank(_F("search_vector"), search_query))
                     .order_by("-rank", "-created_at")
                     .distinct()
                 )
@@ -325,7 +387,7 @@ class BuscaViewSet(viewsets.GenericViewSet):
         else:
             qs = qs.order_by("-created_at")
 
-        qs = qs.prefetch_related(capa_prefetch)
+        qs = qs.prefetch_related(capa_prefetch, "autores", "categorias", "tags")
         page = self.paginate_queryset(qs)
         serializer = self.get_serializer(page or qs, many=True)
         return (

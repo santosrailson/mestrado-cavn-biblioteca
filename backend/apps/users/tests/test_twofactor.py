@@ -8,8 +8,8 @@ from apps.users.tests.factories import UserFactory
 
 
 def _token(device: TOTPDevice) -> str:
-    from binascii import unhexlify
     import base64
+    from binascii import unhexlify
     raw_key = unhexlify(device.key.encode())
     b32_key = base64.b32encode(raw_key).decode()
     return pyotp.TOTP(b32_key).now()

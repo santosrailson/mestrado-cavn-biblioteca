@@ -29,6 +29,7 @@ import { useEditable } from '@/features/admin/hooks/useEditable';
 import adminApi from '@/features/admin/api/adminApi';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
+import { Loading } from '@/shared/components/Loading';
 
 const DocumentFormModal = lazy(() =>
   import('@/features/admin/components/DocumentFormModal').then((m) => ({ default: m.DocumentFormModal }))
@@ -360,7 +361,7 @@ export function DocumentDetailPage() {
         </article>
       </main>
 
-      <Suspense fallback={null}>
+      <Suspense fallback={<Loading />}>
         <DocumentFormModal
           isOpen={documentModalOpen}
           onClose={() => setDocumentModalOpen(false)}

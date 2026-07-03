@@ -1,5 +1,5 @@
 import { clsx } from 'clsx';
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { ButtonHTMLAttributes, Children, forwardRef, ReactElement, cloneElement } from 'react';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -8,6 +8,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
+  asChild?: boolean;
 }
 
 const variants: Record<ButtonVariant, string> = {
@@ -26,13 +27,24 @@ const sizes: Record<ButtonSize, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = 'primary', size = 'md', isLoading, children, className, disabled, ...props },
+    { variant = 'primary', size = 'md', isLoading, children, className, disabled, asChild, ...props },
     ref
   ) => {
+    const classes = clsx(variants[variant], sizes[size], className);
+
+    if (asChild && Children.count(children) === 1) {
+      const child = Children.only(children) as ReactElement;
+      return cloneElement(child, {
+        className: clsx(classes, child.props.className),
+        ref,
+        ...props,
+      });
+    }
+
     return (
       <button
         ref={ref}
-        className={clsx(variants[variant], sizes[size], className)}
+        className={classes}
         disabled={disabled || isLoading}
         aria-busy={isLoading || undefined}
         {...props}

@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, RouteObject } from 'react-router-dom';
+import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import { lazy } from 'react';
 import { RootLayout } from '@/app/RootLayout';
 import { PublicLayout } from '@/app/PublicLayout';
@@ -77,6 +77,10 @@ const ProfilePage = lazy(() =>
 );
 const PasswordRequestsPage = lazy(() =>
   import('@/features/admin/pages/PasswordRequestsPage').then((m) => ({ default: m.PasswordRequestsPage }))
+);
+
+const NotFoundPage = lazy(() =>
+  import('@/features/content/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 );
 
 const publicRoutes: RouteObject[] = [
@@ -181,7 +185,7 @@ export const router = createBrowserRouter([
     children: [
       ...publicRoutes,
       ...adminRoutes,
-      { path: '*', element: <Navigate to="/" replace /> },
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]);

@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from apps.categories.models import Categoria
 from apps.categories.serializers import CategoriaSerializer
+from apps.core.cache import cached_response
 from apps.users.permissions import IsCataloguer
 
 logger = logging.getLogger(__name__)
@@ -37,9 +38,13 @@ class CategoriaViewSet(viewsets.ModelViewSet):
             return [IsCataloguer()]
         return []
 
+    @cached_response("categories", ttl=300)
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         logger.info("listando_categorias", extra={"total": queryset.count(), "user": request.user.email if request.user.is_authenticated else "anonymous"})
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
 

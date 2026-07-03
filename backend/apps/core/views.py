@@ -2,7 +2,6 @@
 
 import calendar
 import logging
-
 from datetime import timedelta
 
 from django.core.cache import cache
