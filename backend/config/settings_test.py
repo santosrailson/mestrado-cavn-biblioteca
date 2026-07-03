@@ -7,6 +7,7 @@ comportamentos de borda que atrapalham testes de API no test client.
 from .settings import *  # noqa: F401,F403
 
 DEBUG = True
+ALLOWED_HOSTS = ["*"]
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
