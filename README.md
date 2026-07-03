@@ -442,20 +442,40 @@ docker-compose up --build
 - [x] Acessibilidade básica (WCAG 2.1 / eMAG)
 - [x] PWA (service worker via Workbox)
 - [x] Docker Compose funcional (dev e produção)
-- [x] Testes backend passando (89 testes)
+- [x] Testes backend passando (91 testes)
 - [x] Testes E2E com Playwright
 - [x] Deploy em produção com Nginx + SSL, Celery, backups e Sentry
+- [x] Otimização de queries e cache Redis em endpoints públicos
+- [x] CI/CD com GitHub Actions (testes + lint + build)
+- [x] Página 404 dedicada e fallbacks de carregamento
 
 ---
 
 ## Próximos passos sugeridos
 
-1. **OCR**: integrar Tesseract na task Celery `process_document_ocr` já preparada (`pytesseract` já consta em `requirements.txt`)
-2. **Marca d'água**: adicionar watermark em downloads de imagens
-3. **Exportação de metadados**: XML (Dublin Core), JSON, CSV
-4. **Feeds**: RSS/Atom para novos documentos
-5. **Cobertura de testes frontend**: ampliar os testes de componentes com Vitest/Testing Library
-6. **Observabilidade**: complementar o Sentry com métricas (Prometheus/Grafana)
+### Fase 2 — Qualidade e Escalabilidade (curto prazo)
+
+1. **Testes E2E robustos**: substituir `waitForTimeout` fixos do Playwright por asserções de estado
+2. **Observabilidade**: adicionar métricas estruturadas (Prometheus/Grafana) e healthchecks detalhados
+3. **Otimização de imagens**: servir WebP, gerar `srcset` real e considerar CDN para `/media/`
+4. **Auditoria ampliada**: registrar alterações em usuários, categorias, tags e galeria (hoje só documentos)
+5. **Internacionalização (i18n)**: extrair textos hardcoded do `pt-BR.ts` para `react-i18next`
+
+### Fase 3 — Polimento e Diferenciação (médio prazo)
+
+6. **OCR**: integrar Tesseract na task Celery `process_document_ocr` já preparada
+7. **Marca d'água**: adicionar watermark em downloads de imagens
+8. **Exportação de metadados**: XML (Dublin Core), JSON, CSV
+9. **Feeds**: RSS/Atom para novos documentos
+10. **OG images dinâmicas**: gerar metatags sociais a partir da capa de cada documento
+11. **Deploy automatizado**: evoluir o CI/CD para fazer deploy na VPS após merge na `main`
+
+---
+
+## Histórico de melhorias recentes
+
+- **Fase 1 — Estabilidade**: otimização de queries (N+1 eliminado), cache Redis em endpoints públicos,
+  ajustes de permissões, página 404 dedicada, CI/CD com GitHub Actions e lint com Ruff.
 
 ---
 
