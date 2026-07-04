@@ -1,25 +1,13 @@
 import pytest
 from rest_framework.test import APIClient
 
-from apps.core.constants import UserRole
 from apps.gallery.models import Album, Foto
 from apps.gallery.tests.factories import AlbumFactory
-from apps.users.models import User
 
 
 @pytest.fixture
 def api_client():
     return APIClient()
-
-
-@pytest.fixture
-def curador(db):
-    return User.objects.create_user(
-        email="curador@cavn.br",
-        username="curador",
-        password="testpass",
-        role=UserRole.CURATOR,
-    )
 
 
 @pytest.mark.django_db

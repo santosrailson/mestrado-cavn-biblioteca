@@ -3,23 +3,11 @@ from rest_framework.test import APIClient
 
 from apps.academic.models import ProducaoAcademica
 from apps.academic.tests.factories import ProducaoAcademicaFactory
-from apps.core.constants import UserRole
-from apps.users.models import User
 
 
 @pytest.fixture
 def api_client():
     return APIClient()
-
-
-@pytest.fixture
-def curador(db):
-    return User.objects.create_user(
-        email="curador@cavn.br",
-        username="curador",
-        password="testpass",
-        role=UserRole.CURATOR,
-    )
 
 
 @pytest.mark.django_db
@@ -47,9 +35,7 @@ def test_producao_detail_by_slug(api_client):
 
 @pytest.mark.django_db
 def test_filter_by_tipo(api_client):
-    ProducaoAcademica.objects.create(
-        titulo="Tese sobre solos", autor="A", ano=2019, tipo="tese"
-    )
+    ProducaoAcademica.objects.create(titulo="Tese sobre solos", autor="A", ano=2019, tipo="tese")
     ProducaoAcademica.objects.create(
         titulo="Artigo de irrigação", autor="B", ano=2020, tipo="artigo"
     )

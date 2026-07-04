@@ -4,6 +4,7 @@ import logging
 
 from celery import shared_task
 
+from apps.core.middleware import request_id_var
 from apps.documents.models import Arquivo
 from apps.documents.services import process_uploaded_file
 
@@ -11,8 +12,16 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def processar_arquivo_async(self, arquivo_id):
-    """Processa um arquivo em background (checksum, mime, thumbnail, OCR)."""
+def processar_arquivo_async(self, arquivo_id, request_id=""):
+    """Processa um arquivo em background (checksum, mime, thumbnail, OCR).
+
+    Recebe ``request_id`` da requisição que disparou a task e o repassa para
+    o ``ContextVar`` de correlation ID, permitindo rastrear logs de processamento
+    até a requisição original.
+    """
+    if request_id:
+        request_id_var.set(request_id)
+
     try:
         arquivo = Arquivo.objects.get(pk=arquivo_id)
         process_uploaded_file(arquivo)

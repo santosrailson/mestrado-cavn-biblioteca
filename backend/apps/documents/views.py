@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from apps.audit.services import AuditoriaService
 from apps.categories.models import Categoria
 from apps.core.cache import cached_response
+from apps.core.middleware import request_id_var
 from apps.documents.filters import DocumentFilter
 from apps.documents.models import Arquivo, Autor, Document, DocumentoRelacionado
 from apps.documents.permissions import CanApproveDocument, CanEditDocument
@@ -187,7 +188,9 @@ class DocumentViewSet(viewsets.ModelViewSet):
         motivo = request.data.get("motivo", "")
         try:
             DocumentWorkflowService.reject(document, request.user, motivo=motivo)
-            return Response({"status": document.status, "motivo_rejeicao": document.motivo_rejeicao})
+            return Response(
+                {"status": document.status, "motivo_rejeicao": document.motivo_rejeicao}
+            )
         except WorkflowError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -231,7 +234,7 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer = ArquivoUploadSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         arquivo = serializer.save()
-        processar_arquivo_async.delay(str(arquivo.pk))
+        processar_arquivo_async.delay(str(arquivo.pk), request_id=request_id_var.get())
         return Response(ArquivoSerializer(arquivo).data, status=status.HTTP_201_CREATED)
 
 
@@ -282,7 +285,7 @@ class ArquivoViewSet(viewsets.ModelViewSet):
                 "Você não tem permissão para adicionar arquivos a este documento."
             )
         arquivo = serializer.save()
-        processar_arquivo_async.delay(str(arquivo.pk))
+        processar_arquivo_async.delay(str(arquivo.pk), request_id=request_id_var.get())
 
     def perform_destroy(self, instance):
         documento = instance.documento
@@ -291,8 +294,11 @@ class ArquivoViewSet(viewsets.ModelViewSet):
         arquivo_id = str(instance.pk)
         instance.delete()
         AuditoriaService.registrar(
-            usuario=self.request.user, acao="excluir", entidade="Arquivo",
-            entidade_id=arquivo_id, request=self.request,
+            usuario=self.request.user,
+            acao="excluir",
+            entidade="Arquivo",
+            entidade_id=arquivo_id,
+            request=self.request,
         )
 
     @action(detail=True, methods=["get"], url_path="download")
@@ -376,9 +382,7 @@ class BuscaViewSet(viewsets.GenericViewSet):
 
         if query:
             if connection.vendor == "postgresql":
-                search_query = SearchQuery(
-                    query, config="portuguese", search_type="websearch"
-                )
+                search_query = SearchQuery(query, config="portuguese", search_type="websearch")
                 qs = (
                     qs.filter(
                         Q(search_vector=search_query)
@@ -392,8 +396,7 @@ class BuscaViewSet(viewsets.GenericViewSet):
             else:
                 qs = (
                     qs.filter(
-                        Q(titulo__icontains=query)
-                        | Q(arquivos__conteudo_ocr__icontains=query)
+                        Q(titulo__icontains=query) | Q(arquivos__conteudo_ocr__icontains=query)
                     )
                     .order_by("-created_at")
                     .distinct()

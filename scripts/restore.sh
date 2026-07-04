@@ -14,6 +14,42 @@ set -euo pipefail
 
 PROJECT_DIR="/opt/cavn-digital"
 COMPOSE_FILE="docker-compose.prod.yml"
+DB_SERVICE="db"
+WRITER_SERVICES=("backend" "celery-worker" "celery-beat")
+
+compose_cmd() {
+  docker compose -f "${COMPOSE_FILE}" "$@"
+}
+
+container_is_healthy() {
+  local service="$1"
+  local status
+  status=$(compose_cmd ps --format json "${service}" 2>/dev/null | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    # ps --format json pode retornar uma lista ou um dict único
+    items = data if isinstance(data, list) else [data]
+    for item in items:
+        if item.get("Health") == "healthy" or item.get("State") == "running":
+            print("ok")
+            sys.exit(0)
+except Exception:
+    pass
+print("nok")
+')
+  [[ "${status}" == "ok" ]]
+}
+
+stop_writers() {
+  echo "==> Parando serviços que escrevem no banco..."
+  compose_cmd stop "${WRITER_SERVICES[@]}"
+}
+
+start_writers() {
+  echo "==> Reiniciando serviços que escrevem no banco..."
+  compose_cmd start "${WRITER_SERVICES[@]}"
+}
 
 if [[ $# -ne 2 ]]; then
   echo "Uso: bash scripts/restore.sh {db|media} <caminho_do_arquivo.gpg>" >&2
@@ -43,6 +79,12 @@ fi
 DB_USER="${DB_USER:-cavn_digital}"
 DB_NAME="${DB_NAME:-cavn_digital}"
 
+if ! container_is_healthy "${DB_SERVICE}"; then
+  echo "ERRO: o container '${DB_SERVICE}' não está rodando/saudável. Verifique com:" >&2
+  echo "  docker compose -f ${COMPOSE_FILE} ps" >&2
+  exit 1
+fi
+
 echo "!!! Você está prestes a restaurar '${TIPO}' a partir de ${ARQUIVO_CIFRADO} !!!"
 echo "Isso pode SOBRESCREVER dados atuais em ${PROJECT_DIR}."
 read -r -p "Digite 'restaurar' para confirmar: " CONFIRMACAO
@@ -52,7 +94,16 @@ if [[ "${CONFIRMACAO}" != "restaurar" ]]; then
 fi
 
 TMP_DIR=$(mktemp -d)
-trap 'rm -rf "${TMP_DIR}"' EXIT
+
+restore_cleanup() {
+  rm -rf "${TMP_DIR}"
+  # Se estivermos no meio de um restore de banco, garante que os writers
+  # sejam reiniciados para não deixar o ambiente parado.
+  if [[ "${TIPO:-}" == "db" ]]; then
+    start_writers || true
+  fi
+}
+trap 'restore_cleanup' EXIT
 
 decrypt() {
   local encrypted_file="$1"
@@ -68,10 +119,12 @@ case "${TIPO}" in
     decrypt "${ARQUIVO_CIFRADO}" "${DECRYPTED}"
     gunzip -f "${DECRYPTED}"
     SQL_FILE="${DECRYPTED%.gz}"
-    echo "==> Restaurando banco de dados a partir de ${SQL_FILE}..."
     cd "${PROJECT_DIR}"
-    docker compose -f "${COMPOSE_FILE}" exec -T db psql -U "${DB_USER}" -d "${DB_NAME}" < "${SQL_FILE}"
+    stop_writers
+    echo "==> Restaurando banco de dados a partir de ${SQL_FILE}..."
+    compose_cmd exec -T "${DB_SERVICE}" psql -U "${DB_USER}" -d "${DB_NAME}" < "${SQL_FILE}"
     echo "==> Banco restaurado com sucesso."
+    start_writers
     ;;
   media)
     DECRYPTED="${TMP_DIR}/media_restore.tar.gz"

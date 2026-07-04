@@ -2,11 +2,10 @@ import pytest
 from django.core.cache import cache
 from rest_framework.test import APIClient
 
-from apps.core.constants import DocumentStatus, UserRole
+from apps.core.constants import DocumentStatus
 from apps.documents.models import Document
 from apps.timeline.models import TimelineEvent
 from apps.timeline.tests.factories import TimelineEventFactory
-from apps.users.models import User
 
 
 @pytest.fixture
@@ -17,16 +16,6 @@ def api_client():
 @pytest.fixture(autouse=True)
 def clear_cache():
     cache.clear()
-
-
-@pytest.fixture
-def curador(db):
-    return User.objects.create_user(
-        email="curador@cavn.br",
-        username="curador",
-        password="testpass",
-        role=UserRole.CURATOR,
-    )
 
 
 @pytest.mark.django_db
@@ -54,12 +43,8 @@ def test_eventos_ordered_by_data_evento(api_client):
 
 @pytest.mark.django_db
 def test_filter_destaques(api_client):
-    TimelineEvent.objects.create(
-        titulo="Evento destaque", data_evento="1965-01-01", destaque=True
-    )
-    TimelineEvent.objects.create(
-        titulo="Evento comum", data_evento="1966-01-01", destaque=False
-    )
+    TimelineEvent.objects.create(titulo="Evento destaque", data_evento="1965-01-01", destaque=True)
+    TimelineEvent.objects.create(titulo="Evento comum", data_evento="1966-01-01", destaque=False)
 
     response = api_client.get("/api/v1/timeline/eventos/?destaque=true")
     assert response.status_code == 200

@@ -1,4 +1,5 @@
 import pytest
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.audit.models import Auditoria
@@ -41,6 +42,23 @@ class TestUserModelAudit:
         user = UserFactory(role=UserRole.CATALOGUER)
         assert Auditoria.objects.filter(
             entidade="User", entidade_id=str(user.pk), acao="criar"
+        ).exists()
+
+    def test_atualizar_usuario_gera_auditoria(self):
+        user = UserFactory(role=UserRole.CATALOGUER)
+        user.email = "novo@cavn.br"
+        user.save()
+        assert Auditoria.objects.filter(
+            entidade="User", entidade_id=str(user.pk), acao="atualizar"
+        ).exists()
+
+    def test_atualizar_apenas_last_login_nao_gera_auditoria(self):
+        user = UserFactory(role=UserRole.CATALOGUER)
+        Auditoria.objects.filter(entidade="User", entidade_id=str(user.pk)).delete()
+        user.last_login = timezone.now()
+        user.save(update_fields=["last_login"])
+        assert not Auditoria.objects.filter(
+            entidade="User", entidade_id=str(user.pk), acao="atualizar"
         ).exists()
 
     def test_excluir_usuario_gera_auditoria(self):

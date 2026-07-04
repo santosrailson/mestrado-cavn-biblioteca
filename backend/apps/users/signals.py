@@ -8,8 +8,19 @@ from apps.users.models import User
 
 
 @receiver(post_save, sender=User)
-def log_user_save(sender, instance, created, **kwargs):
-    """Registra criação ou atualização de usuários na auditoria."""
+def log_user_save(sender, instance, created, update_fields=None, **kwargs):
+    """Registra criação ou atualização de usuários na auditoria.
+
+    Ignora saves que atualizam apenas ``last_login`` (disparados
+    automaticamente pelo JWT em toda autenticação bem-sucedida) para evitar
+    poluir a tabela de auditoria com alterações que não representam mudanças
+    administrativas reais.
+    """
+    if not created:
+        updated = set(update_fields) if update_fields else None
+        if updated == {"last_login"}:
+            return
+
     AuditoriaService.registrar(
         usuario=instance,
         acao="criar" if created else "atualizar",
