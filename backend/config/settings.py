@@ -103,6 +103,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # Middleware
 # =============================================================================
 MIDDLEWARE = [
+    "apps.core.middleware.RequestIdMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -385,6 +386,8 @@ class _JsonFormatter(logging.Formatter):
         import json
         import traceback
 
+        from apps.core.middleware import request_id_var
+
         payload: dict = {
             "time": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
             "level": record.levelname,
@@ -392,6 +395,7 @@ class _JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
             "module": record.module,
             "lineno": record.lineno,
+            "request_id": request_id_var.get(),
         }
         if record.exc_info:
             payload["exc"] = traceback.format_exception(*record.exc_info)
