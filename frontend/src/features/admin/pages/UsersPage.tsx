@@ -13,6 +13,7 @@ import { Card } from '@/shared/components/Card';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
+import { EmptyState } from '@/shared/components/EmptyState';
 import ptBR from '@/shared/i18n/pt-BR';
 import { Usuario, PerfilUsuario } from '@/shared/types';
 import { clsx } from 'clsx';
@@ -152,69 +153,76 @@ export function UsersPage() {
       </div>
 
       <Card className="overflow-hidden p-0">
-        <table className="w-full text-sm">
-          <thead className="bg-surface text-left">
-            <tr>
-              <th className="px-4 py-3 font-semibold">Nome</th>
-              <th className="px-4 py-3 font-semibold">E-mail</th>
-              <th className="px-4 py-3 font-semibold">Perfil</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {users?.map((user) => (
-              <tr key={user.id}>
-                <td className="px-4 py-3 font-medium">{user.nome}</td>
-                <td className="px-4 py-3">{user.email}</td>
-                <td className="px-4 py-3 capitalize">{user.perfil}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={clsx(
-                      'rounded px-2 py-1 text-xs font-medium',
-                      user.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    )}
-                  >
-                    {user.ativo ? 'Ativo' : 'Inativo'}
-                  </span>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(user)}
-                      className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
-                    >
-                      <Edit className="h-4 w-4" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleStatusMutation.mutate({ id: user.id, ativo: !user.ativo })
-                      }
-                      className="rounded p-1.5 text-yellow-600 hover:bg-yellow-50"
-                    >
-                      {user.ativo ? (
-                        <UserX className="h-4 w-4" aria-hidden="true" />
-                      ) : (
-                        <UserCheck className="h-4 w-4" aria-hidden="true" />
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (confirm('Deseja excluir este usuário?')) deleteMutation.mutate(user.id);
-                      }}
-                      className="rounded p-1.5 text-red-600 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" aria-hidden="true" />
-                    </button>
-                  </div>
-                </td>
+        {users && users.length === 0 ? (
+          <EmptyState
+            title="Nenhum usuário cadastrado"
+            description="Crie o primeiro usuário para começar a gerenciar o acesso ao sistema."
+          />
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-surface text-left">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Nome</th>
+                <th className="px-4 py-3 font-semibold">E-mail</th>
+                <th className="px-4 py-3 font-semibold">Perfil</th>
+                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {users?.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-4 py-3 font-medium">{user.nome}</td>
+                  <td className="px-4 py-3">{user.email}</td>
+                  <td className="px-4 py-3 capitalize">{user.perfil}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={clsx(
+                        'rounded px-2 py-1 text-xs font-medium',
+                        user.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      )}
+                    >
+                      {user.ativo ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(user)}
+                        className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                      >
+                        <Edit className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          toggleStatusMutation.mutate({ id: user.id, ativo: !user.ativo })
+                        }
+                        className="rounded p-1.5 text-yellow-600 hover:bg-yellow-50"
+                      >
+                        {user.ativo ? (
+                          <UserX className="h-4 w-4" aria-hidden="true" />
+                        ) : (
+                          <UserCheck className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (confirm('Deseja excluir este usuário?')) deleteMutation.mutate(user.id);
+                        }}
+                        className="rounded p-1.5 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </Card>
 
       <Modal
