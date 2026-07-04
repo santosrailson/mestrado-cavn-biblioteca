@@ -16,6 +16,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.users.models import User
 from apps.users.permissions import IsAdministrator, IsOwnerOrAdministrator
+from apps.users.ratelimit import RateLimitedMixin, drf_ratelimit
 from apps.users.serializers import (
     UserCreateSerializer,
     UserSerializer,
@@ -59,13 +60,15 @@ def _clear_auth_cookies(response):
     response.delete_cookie("cavn_refresh", samesite="Lax")
 
 
-class CustomTokenObtainPairView(TokenObtainPairView):
+class CustomTokenObtainPairView(RateLimitedMixin, TokenObtainPairView):
     """Login via JWT: define cookies httpOnly e retorna dados do usuário.
 
     Integra com django-axes para bloqueio temporário após tentativas falhas.
     """
 
     permission_classes = [AllowAny]
+    rate_limit_group = "login"
+    rate_limit_rate = "5/m"
 
     def _axes_credentials(self, request):
         """Monta credenciais usadas pelo django-axes."""
@@ -132,10 +135,12 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         return response
 
 
-class CustomTokenRefreshView(TokenRefreshView):
+class CustomTokenRefreshView(RateLimitedMixin, TokenRefreshView):
     """Renova o access token lendo o refresh do cookie httpOnly."""
 
     permission_classes = [AllowAny]
+    rate_limit_group = "token_refresh"
+    rate_limit_rate = "10/m"
 
     def post(self, request, *args, **kwargs):
         refresh_cookie = request.COOKIES.get("cavn_refresh")
@@ -232,6 +237,7 @@ def me_view(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@drf_ratelimit(group="alterar_senha", rate="5/m")
 def alterar_propria_senha(request):
     """Usuário autenticado altera a própria senha (requer senha atual)."""
     user = request.user
@@ -255,6 +261,7 @@ def alterar_propria_senha(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@drf_ratelimit(group="solicitar_senha", rate="3/h")
 def solicitar_alteracao_senha(request):
     """Usuário não-admin envia solicitação de troca de senha para aprovação."""
     from django.contrib.auth.hashers import make_password
