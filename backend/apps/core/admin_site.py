@@ -16,12 +16,8 @@ class ConditionalOTPAdminSite(admin.AdminSite):
     def has_permission(self, request):
         if not super().has_permission(request):
             return False
-        has_device = TOTPDevice.objects.filter(
-            user=request.user, confirmed=True
-        ).exists()
-        if has_device and not request.user.is_verified():
-            return False
-        return True
+        has_device = TOTPDevice.objects.filter(user=request.user, confirmed=True).exists()
+        return not has_device or request.user.is_verified()
 
 
 def install_conditional_otp_admin():

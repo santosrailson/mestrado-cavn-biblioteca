@@ -53,4 +53,3 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         return super().retrieve(request, *args, **kwargs)
-

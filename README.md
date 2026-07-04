@@ -191,6 +191,10 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
 # Edite .env conforme necessário. Para usar SQLite, defina DB_ENGINE=sqlite
+
+# Ative os hooks de pre-commit (rodar uma vez após clonar o repositório)
+pip install pre-commit && pre-commit install
+
 python manage.py migrate
 python manage.py collectstatic --noinput
 python manage.py seed_data --reset

@@ -1,8 +1,8 @@
 # Design: Fase 1 — Quick Wins de Maturidade Enterprise
 
-**Projeto:** Repositório Digital CAVN  
-**Data:** 2026-07-04  
-**Escopo:** Opção A — Quick Wins enxutos e seguros  
+**Projeto:** Repositório Digital CAVN
+**Data:** 2026-07-04
+**Escopo:** Opção A — Quick Wins enxutos e seguros
 **Status:** Proposta para aprovação
 
 ---
