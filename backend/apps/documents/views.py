@@ -265,7 +265,13 @@ class ArquivoViewSet(viewsets.ModelViewSet):
         return ArquivoSerializer
 
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy"]:
+        if self.action == "destroy":
+            # A verificação de objeto é feita manualmente em perform_destroy contra
+            # o Document relacionado: CanEditDocument espera um Document (created_by,
+            # status), não um Arquivo, então não pode ser usada aqui como permission
+            # class de objeto (o DRF chamaria has_object_permission com o Arquivo).
+            return [IsAuthenticated()]
+        if self.action in ["create", "update", "partial_update"]:
             return [IsAuthenticated(), CanEditDocument()]
         # Leituras são públicas; o queryset já filtra por documentos publicados.
         return [AllowAny()]
@@ -276,8 +282,7 @@ class ArquivoViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         documento = instance.documento
-        user = self.request.user
-        if not user.can_edit_document(documento):
+        if not CanEditDocument().has_object_permission(self.request, self, documento):
             raise PermissionDenied("Você não tem permissão para remover este arquivo.")
         instance.delete()
 
