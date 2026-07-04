@@ -100,5 +100,16 @@ export default defineConfig({
     setupFiles: ['./src/shared/lib/testSetup.ts'],
     css: true,
     exclude: ['**/node_modules/**', '**/e2e/**', '**/*.spec.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      exclude: [
+        'node_modules/',
+        'e2e/',
+        '**/*.d.ts',
+        '**/*.config.*',
+        'src/main.tsx',
+      ],
+    },
   },
 });

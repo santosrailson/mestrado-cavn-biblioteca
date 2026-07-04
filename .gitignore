@@ -83,6 +83,7 @@ frontend/playwright-report/
 frontend/blob-report/
 frontend/playwright/.cache/
 frontend/e2e/.auth/
+frontend/coverage/
 
 # =============================================================================
 # Docker / infraestrutura
