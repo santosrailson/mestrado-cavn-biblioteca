@@ -98,7 +98,7 @@ A configuração completa do Nginx fica em `/etc/nginx/sites-enabled/bibliotecad
 
 ### Backup
 
-O script `scripts/backup.sh` faz backup diário do banco, da pasta `media/` e do `.env`:
+O script `scripts/backup.sh` faz backup diário do banco, da pasta `media/` e do `.env`, cifrando todos os arquivos gerados com GPG (AES256) usando `BACKUP_PASSPHRASE` do `.env`. Sem essa variável definida, o script recusa rodar:
 
 ```bash
 bash scripts/backup.sh

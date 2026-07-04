@@ -68,6 +68,14 @@ SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.1
 SENTRY_PROFILES_SAMPLE_RATE=0.05
 
+# Backup (scripts/backup.sh)
+# Obrigatória: sem ela, o script recusa gerar backups (evita gravar segredos
+# em texto puro no disco/storage externo). Gere com:
+#   python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+BACKUP_PASSPHRASE=ALTERE-ESSA-PASSPHRASE-FORTE
+# Remote do rclone para sync offsite (opcional, ex: "s3:cavn-backups")
+# RCLONE_REMOTE=
+
 # Frontend
 VITE_API_URL=/api/v1
 VITE_SITE_URL=https://bibliotecadigital.cchsa-cavn.tec.br

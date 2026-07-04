@@ -48,6 +48,10 @@ jobs:
           pip install -r requirements.txt
       - name: Lint com Ruff
         run: ruff check apps config
+      - name: Auditoria de dependências (pip-audit)
+        run: |
+          pip install --quiet pip-audit
+          pip-audit -r requirements.txt
       - name: Testes
         env:
           DJANGO_SETTINGS_MODULE: config.settings_test
@@ -75,6 +79,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - name: Instalar dependências
         run: npm ci
+      - name: Auditoria de dependências (npm audit)
+        run: npm audit --audit-level=high
       - name: Lint
         run: npm run lint
       - name: Testes

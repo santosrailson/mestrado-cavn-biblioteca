@@ -15,10 +15,12 @@ services:
     image: postgres:16-alpine
     container_name: cavn-db
     restart: unless-stopped
+    mem_limit: ${DB_MEM_LIMIT:-512m}
+    cpus: ${DB_CPUS:-1.0}
     environment:
       POSTGRES_DB: ${DB_NAME:-cavn_digital}
       POSTGRES_USER: ${DB_USER:-cavn_digital}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env de produção}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -33,6 +35,8 @@ services:
     image: redis:7-alpine
     container_name: cavn-redis
     restart: unless-stopped
+    mem_limit: ${REDIS_MEM_LIMIT:-256m}
+    cpus: ${REDIS_CPUS:-0.5}
     command: >
       sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then
         redis-server --requirepass "$$REDIS_PASSWORD";
@@ -61,6 +65,8 @@ services:
       dockerfile: Dockerfile
     container_name: cavn-backend
     restart: unless-stopped
+    mem_limit: ${BACKEND_MEM_LIMIT:-1g}
+    cpus: ${BACKEND_CPUS:-2.0}
     command: >
       sh -c "python manage.py migrate --noinput &&
              python manage.py collectstatic --noinput &&
@@ -74,7 +80,7 @@ services:
       DB_ENGINE: postgresql
       DB_NAME: ${DB_NAME:-cavn_digital}
       DB_USER: ${DB_USER:-cavn_digital}
-      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env de produção}
       DB_HOST: db
       DB_PORT: 5432
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -121,6 +127,8 @@ services:
       dockerfile: Dockerfile
     container_name: cavn-celery-worker
     restart: unless-stopped
+    mem_limit: ${CELERY_WORKER_MEM_LIMIT:-1g}
+    cpus: ${CELERY_WORKER_CPUS:-1.5}
     command: celery -A config worker -l info
     environment:
       SECRET_KEY: ${SECRET_KEY}
@@ -131,7 +139,7 @@ services:
       DB_ENGINE: postgresql
       DB_NAME: ${DB_NAME:-cavn_digital}
       DB_USER: ${DB_USER:-cavn_digital}
-      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env de produção}
       DB_HOST: db
       DB_PORT: 5432
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -153,6 +161,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 10 | grep -q OK"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
 
   celery-beat:
     build:
@@ -160,7 +174,9 @@ services:
       dockerfile: Dockerfile
     container_name: cavn-celery-beat
     restart: unless-stopped
-    command: celery -A config beat -l info
+    mem_limit: ${CELERY_BEAT_MEM_LIMIT:-256m}
+    cpus: ${CELERY_BEAT_CPUS:-0.25}
+    command: celery -A config beat -l info --pidfile=/tmp/celerybeat.pid
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG:-False}
@@ -170,7 +186,7 @@ services:
       DB_ENGINE: postgresql
       DB_NAME: ${DB_NAME:-cavn_digital}
       DB_USER: ${DB_USER:-cavn_digital}
-      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env de produção}
       DB_HOST: db
       DB_PORT: 5432
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -192,6 +208,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid && kill -0 $$(cat /tmp/celerybeat.pid)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   flower:
     build:
@@ -199,6 +221,8 @@ services:
       dockerfile: Dockerfile
     container_name: cavn-flower
     restart: unless-stopped
+    mem_limit: ${FLOWER_MEM_LIMIT:-256m}
+    cpus: ${FLOWER_CPUS:-0.25}
     command: celery -A config flower --port=5555 --url-prefix=flower
     environment:
       SECRET_KEY: ${SECRET_KEY}
@@ -208,7 +232,7 @@ services:
       DB_ENGINE: postgresql
       DB_NAME: ${DB_NAME:-cavn_digital}
       DB_USER: ${DB_USER:-cavn_digital}
-      DB_PASSWORD: ${DB_PASSWORD:-cavn_digital}
+      DB_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env de produção}
       DB_HOST: db
       DB_PORT: 5432
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -222,6 +246,12 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -u \"$$FLOWER_BASIC_AUTH\" http://localhost:5555/flower/ || curl -fsS http://localhost:5555/flower/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   frontend:
     build:
@@ -232,6 +262,8 @@ services:
         VITE_SITE_URL: ${SITE_URL:-https://bibliotecadigital.cchsa-cavn.tec.br}
     container_name: cavn-frontend
     restart: unless-stopped
+    mem_limit: ${FRONTEND_MEM_LIMIT:-256m}
+    cpus: ${FRONTEND_CPUS:-0.5}
     volumes:
       - ./backend/media:/usr/share/nginx/media:ro
       - ./backend/staticfiles:/usr/share/nginx/static:ro
@@ -243,6 +275,12 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
 volumes:
   postgres_data:

@@ -42,6 +42,11 @@ if not DEBUG:
         raise ImproperlyConfigured(
             "ALLOWED_HOSTS não pode estar vazio quando DEBUG=False."
         )
+    if "*" in ALLOWED_HOSTS:
+        raise ImproperlyConfigured(
+            "ALLOWED_HOSTS não pode conter '*' em produção — liste os domínios "
+            "explicitamente."
+        )
 
 # =============================================================================
 # Aplicações
@@ -105,11 +110,13 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
-    "axes.middleware.AxesMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django_otp.middleware.OTPMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Deve vir depois de AuthenticationMiddleware (requisito do django-axes)
+    # e por último na lista para observar a resposta final de todos os demais.
+    "axes.middleware.AxesMiddleware",
 ]
 
 if CSP_AVAILABLE:
@@ -445,11 +452,32 @@ USE_X_FORWARDED_HOST = True
 # =============================================================================
 # Headers de segurança (ajustar conforme ambiente)
 # =============================================================================
-# Em produção forçamos HTTPS/HSTS e cookies seguros, a menos que explicitamente
-# desabilitado para ambientes locais especiais (não recomendado).
-_DISABLE_HTTPS_ENFORCEMENT = (
+# Em produção forçamos HTTPS/HSTS e cookies seguros. Este comportamento só pode
+# ser desabilitado com DUAS variáveis explícitas (defesa em profundidade contra
+# desativação acidental em produção): DISABLE_HTTPS_ENFORCEMENT e
+# ACKNOWLEDGE_INSECURE_HTTPS_DISABLED, ambas "True".
+_DISABLE_HTTPS_ENFORCEMENT_REQUESTED = (
     os.getenv("DISABLE_HTTPS_ENFORCEMENT", "False").lower() in ("true", "1", "yes")
 )
+_ACKNOWLEDGE_INSECURE_HTTPS_DISABLED = (
+    os.getenv("ACKNOWLEDGE_INSECURE_HTTPS_DISABLED", "False").lower()
+    in ("true", "1", "yes")
+)
+if _DISABLE_HTTPS_ENFORCEMENT_REQUESTED and not _ACKNOWLEDGE_INSECURE_HTTPS_DISABLED:
+    raise ImproperlyConfigured(
+        "DISABLE_HTTPS_ENFORCEMENT=True exige também "
+        "ACKNOWLEDGE_INSECURE_HTTPS_DISABLED=True, para evitar desativação "
+        "acidental da segurança HTTPS em produção."
+    )
+_DISABLE_HTTPS_ENFORCEMENT = (
+    _DISABLE_HTTPS_ENFORCEMENT_REQUESTED and _ACKNOWLEDGE_INSECURE_HTTPS_DISABLED
+)
+if _DISABLE_HTTPS_ENFORCEMENT:
+    logging.getLogger(__name__).warning(
+        "DISABLE_HTTPS_ENFORCEMENT está ativo — HSTS, redirecionamento SSL e "
+        "cookies seguros foram desabilitados manualmente. Não use isso em "
+        "produção real."
+    )
 
 if not DEBUG and not _DISABLE_HTTPS_ENFORCEMENT:
     SECURE_SSL_REDIRECT = True
