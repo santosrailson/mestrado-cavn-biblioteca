@@ -5,6 +5,7 @@ import logging
 from datetime import timedelta
 
 from django.core.cache import cache
+from django.db import connections
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
@@ -45,13 +46,31 @@ def _monthly_audit_counts(hoje):
 
 
 class HealthCheckView(APIView):
-    """Endpoint simples de verificação de saúde da API."""
+    """Endpoint de verificação de saúde: confere Postgres e Redis, não só o processo."""
 
     authentication_classes = []
     permission_classes = []
 
     def get(self, request):
-        return Response({"status": "ok", "service": "cavn-digital-backend"})
+        checks = {}
+
+        try:
+            connections["default"].cursor()
+            checks["database"] = "ok"
+        except Exception:
+            checks["database"] = "erro"
+
+        try:
+            cache.set("health_check_probe", "1", timeout=5)
+            checks["cache"] = "ok"
+        except Exception:
+            checks["cache"] = "erro"
+
+        saudavel = all(v == "ok" for v in checks.values())
+        return Response(
+            {"status": "ok" if saudavel else "erro", "service": "cavn-digital-backend", "checks": checks},
+            status=status.HTTP_200_OK if saudavel else status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
 
 
 class DashboardView(APIView):
