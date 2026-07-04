@@ -20,7 +20,7 @@ const buildSearchParams = (filters: SearchFilters & { page?: number; limit?: num
 
 export function useDocuments(filters: SearchFilters & { page?: number; limit?: number }) {
   return useQuery({
-    queryKey: ['documents', JSON.stringify(filters)],
+    queryKey: ['documents', 'list', filters],
     queryFn: async () => {
       const params = buildSearchParams(filters);
       const response = await api.get<PaginatedResponse<Documento>>(

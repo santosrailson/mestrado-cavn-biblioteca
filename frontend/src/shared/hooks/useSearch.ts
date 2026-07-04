@@ -7,7 +7,7 @@ export function useSearch(filters: SearchFilters & { page?: number; limit?: numb
   const debouncedQuery = useDebounce(filters.q, 300);
 
   return useQuery({
-    queryKey: ['search', { ...filters, q: debouncedQuery }],
+    queryKey: ['documents', 'search', { ...filters, q: debouncedQuery }],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (debouncedQuery) params.set('q', debouncedQuery);
