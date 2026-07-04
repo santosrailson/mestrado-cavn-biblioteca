@@ -112,6 +112,20 @@ Recomenda-se agendamento via cron:
 
 > **Importante:** sincronize os arquivos de `/opt/cavn-digital-backups` para um storage externo (S3, Backblaze B2, etc.) para garantir recuperação em desastres.
 
+### Restore de backup
+
+O script `scripts/restore.sh` restaura o banco de dados ou a pasta `media/` a partir de um arquivo `.gpg` gerado pelo `scripts/backup.sh`. O script exige a variável `BACKUP_PASSPHRASE` do `.env` para decifrar o arquivo e pede confirmação explícita antes de prosseguir:
+
+```bash
+# Restore do banco de dados (SUBSTITUI todos os dados atuais)
+bash scripts/restore.sh db /opt/cavn-digital-backups/db_20260101_020000.sql.gz.gpg
+
+# Restore da pasta media
+bash scripts/restore.sh media /opt/cavn-digital-backups/media_20260101_020000.tar.gz.gpg
+```
+
+> **Atenção:** o restore do banco sobrescreve os dados atuais. Sempre teste o ciclo completo backup → restore em ambiente de staging/local antes de executar em produção.
+
 ### Segurança adicional
 
 - **Autenticação de dois fatores (2FA):** TOTP compatível com Google Authenticator/Authy via `django-otp` + `pyotp`, com QR code gerado pelo backend.
