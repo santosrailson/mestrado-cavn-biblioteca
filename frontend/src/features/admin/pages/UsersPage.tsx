@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, UserCheck, UserX } from 'lucide-react';
 import adminApi from '../api/adminApi';
 import { useToast } from '@/shared/hooks/useToast';
+import { getErrorMessage } from '@/shared/lib/getErrorMessage';
 import { Button } from '@/shared/components/Button';
 import { Input } from '@/shared/components/Input';
 import { Card } from '@/shared/components/Card';
@@ -79,8 +80,8 @@ export function UsersPage() {
       toast(editing ? 'Usuário atualizado com sucesso.' : 'Usuário criado com sucesso.', 'success');
       closeModal();
     },
-    onError: () => {
-      toast('Não foi possível salvar o usuário. Tente novamente.', 'error');
+    onError: (error) => {
+      toast(getErrorMessage(error, 'Não foi possível salvar o usuário. Tente novamente.'), 'error');
     },
   });
 
@@ -91,8 +92,11 @@ export function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast('Status do usuário atualizado com sucesso.', 'success');
     },
-    onError: () => {
-      toast('Não foi possível atualizar o status do usuário. Tente novamente.', 'error');
+    onError: (error) => {
+      toast(
+        getErrorMessage(error, 'Não foi possível atualizar o status do usuário. Tente novamente.'),
+        'error'
+      );
     },
   });
 
@@ -102,8 +106,8 @@ export function UsersPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       toast('Usuário excluído com sucesso.', 'success');
     },
-    onError: () => {
-      toast('Não foi possível excluir o usuário. Tente novamente.', 'error');
+    onError: (error) => {
+      toast(getErrorMessage(error, 'Não foi possível excluir o usuário. Tente novamente.'), 'error');
     },
   });
 
