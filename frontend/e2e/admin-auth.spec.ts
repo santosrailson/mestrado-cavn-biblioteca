@@ -10,19 +10,26 @@ test.describe('Autenticação admin', () => {
   });
 
   test('deve exibir erro com credenciais inválidas', async ({ page }) => {
+    await page.route('**/api/v1/auth/login/', (route) =>
+      route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'Credenciais inválidas.' }),
+      })
+    );
+
     await page.goto('/login');
 
     const emailInput = page.locator('input[type="email"], input[name="email"]').first();
     const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
     const submitBtn = page.locator('button[type="submit"]').first();
 
-    if (await emailInput.isVisible()) {
-      await emailInput.fill('admin@cavn.ufpb.br');
-      await passwordInput.fill('senha_errada');
-      await submitBtn.click();
+    await emailInput.fill('admin@cavn.ufpb.br');
+    await passwordInput.fill('senha_errada');
+    await submitBtn.click();
 
-      await page.waitForTimeout(1000);
-    }
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test('deve redirecionar para login ao acessar admin sem auth', async ({ page }) => {
