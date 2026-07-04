@@ -234,7 +234,10 @@ class DocumentViewSet(viewsets.ModelViewSet):
         serializer = ArquivoUploadSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         arquivo = serializer.save()
-        processar_arquivo_async.delay(str(arquivo.pk), request_id=request_id_var.get())
+        processar_arquivo_async.apply_async(
+            args=[str(arquivo.pk)],
+            headers={"x-request-id": request_id_var.get()},
+        )
         return Response(ArquivoSerializer(arquivo).data, status=status.HTTP_201_CREATED)
 
 
@@ -285,7 +288,10 @@ class ArquivoViewSet(viewsets.ModelViewSet):
                 "Você não tem permissão para adicionar arquivos a este documento."
             )
         arquivo = serializer.save()
-        processar_arquivo_async.delay(str(arquivo.pk), request_id=request_id_var.get())
+        processar_arquivo_async.apply_async(
+            args=[str(arquivo.pk)],
+            headers={"x-request-id": request_id_var.get()},
+        )
 
     def perform_destroy(self, instance):
         documento = instance.documento

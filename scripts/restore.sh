@@ -31,24 +31,34 @@ try:
     # ps --format json pode retornar uma lista ou um dict único
     items = data if isinstance(data, list) else [data]
     for item in items:
-        if item.get("Health") == "healthy" or item.get("State") == "running":
+        # Prefere healthcheck explícito; fallback para running quando não há healthcheck
+        health = item.get("Health")
+        state = item.get("State")
+        if health == "healthy" or (health in (None, "") and state == "running"):
             print("ok")
             sys.exit(0)
 except Exception:
     pass
 print("nok")
-')
+' || echo "nok")
   [[ "${status}" == "ok" ]]
 }
+
+WRITERS_STOPPED=false
 
 stop_writers() {
   echo "==> Parando serviços que escrevem no banco..."
   compose_cmd stop "${WRITER_SERVICES[@]}"
+  WRITERS_STOPPED=true
 }
 
 start_writers() {
+  if [[ "${WRITERS_STOPPED}" != "true" ]]; then
+    return 0
+  fi
   echo "==> Reiniciando serviços que escrevem no banco..."
   compose_cmd start "${WRITER_SERVICES[@]}"
+  WRITERS_STOPPED=false
 }
 
 if [[ $# -ne 2 ]]; then
@@ -124,7 +134,6 @@ case "${TIPO}" in
     echo "==> Restaurando banco de dados a partir de ${SQL_FILE}..."
     compose_cmd exec -T "${DB_SERVICE}" psql -U "${DB_USER}" -d "${DB_NAME}" < "${SQL_FILE}"
     echo "==> Banco restaurado com sucesso."
-    start_writers
     ;;
   media)
     DECRYPTED="${TMP_DIR}/media_restore.tar.gz"

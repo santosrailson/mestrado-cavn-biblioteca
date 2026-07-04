@@ -12,15 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def processar_arquivo_async(self, arquivo_id, request_id=""):
+def processar_arquivo_async(self, arquivo_id: str) -> dict:
     """Processa um arquivo em background (checksum, mime, thumbnail, OCR).
 
-    Recebe ``request_id`` da requisição que disparou a task e o repassa para
-    o ``ContextVar`` de correlation ID, permitindo rastrear logs de processamento
-    até a requisição original.
+    O correlation ID da requisição original é passado via cabeçalho da task
+    (``x-request-id``), preservando compatibilidade com workers antigos durante
+    deploys rolantes, e repassado para o ``ContextVar`` de correlation ID para
+    que os logs de processamento carreguem o mesmo ID.
     """
+    request_id = ""
+    token = None
+    if self.request.headers:
+        request_id = self.request.headers.get("x-request-id", "")
+
     if request_id:
-        request_id_var.set(request_id)
+        token = request_id_var.set(request_id)
 
     try:
         arquivo = Arquivo.objects.get(pk=arquivo_id)
@@ -32,3 +38,6 @@ def processar_arquivo_async(self, arquivo_id, request_id=""):
     except Exception as exc:
         logger.exception("processar_arquivo_async: falha no arquivo %s", arquivo_id)
         raise self.retry(exc=exc)
+    finally:
+        if token is not None:
+            request_id_var.reset(token)
