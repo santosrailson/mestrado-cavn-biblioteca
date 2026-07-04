@@ -2,6 +2,14 @@ import { useState, useEffect } from 'react';
 import api from '@/shared/lib/api';
 import ptBR from '@/shared/i18n/pt-BR';
 
+function svgToBase64PngUrl(svg: string): string {
+  // O backend já gera SVG seguro, mas nunca confiamos em HTML injetado.
+  // Convertemos para uma URL de dados base64, que o navegador trata como imagem,
+  // eliminando a superfície de XSS do dangerouslySetInnerHTML.
+  const base64 = btoa(unescape(encodeURIComponent(svg)));
+  return `data:image/svg+xml;base64,${base64}`;
+}
+
 interface TwoFactorData {
   twofactorAtiva: boolean;
   provisioningUri?: string;
@@ -104,9 +112,10 @@ export function TwoFactorSetup() {
           <p className="text-sm text-text-muted">
             Escaneie o QR code com seu aplicativo autenticador (Google Authenticator, Authy, etc.)
           </p>
-          <div
+          <img
+            src={svgToBase64PngUrl(data.qrCodeSvg)}
+            alt="QR code para configurar autenticação de dois fatores"
             className="mx-auto w-56"
-            dangerouslySetInnerHTML={{ __html: data.qrCodeSvg }}
           />
           <div>
             <label className="label" htmlFor="2fa-token">
