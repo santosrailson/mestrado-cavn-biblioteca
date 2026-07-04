@@ -34,6 +34,10 @@ REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
 CELERY_BROKER_URL=redis://:${REDIS_PASSWORD}@redis:6379/1
 CELERY_RESULT_BACKEND=redis://:${REDIS_PASSWORD}@redis:6379/2
 
+# Flower (Celery monitoring)
+# OBRIGATÓRIA em produção — formato usuario:senha (ex.: admin:$(openssl rand -base64 24))
+FLOWER_BASIC_AUTH=usuario:senha-forte
+
 # Segurança (ativar após configurar SSL no Nginx do host)
 SECURE_SSL_REDIRECT=True
 SECURE_HSTS_SECONDS=31536000
