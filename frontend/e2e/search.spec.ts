@@ -10,11 +10,19 @@ test.describe('Busca', () => {
   });
 
   test('deve exibir mensagem quando não há resultados', async ({ page }) => {
+    await page.route('**/api/v1/documentos/**q=ZZZZNaoExiste9999**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ count: 0, next: null, previous: null, results: [] }),
+      })
+    );
+
     await page.goto('/busca?q=ZZZZNaoExiste9999');
 
-    await page.waitForTimeout(1000);
-    const body = page.locator('body');
-    await expect(body).toBeVisible();
+    await expect(
+      page.getByRole('status').filter({ hasText: /nenhum documento encontrado/i })
+    ).toBeVisible();
   });
 
   test('deve redirecionar para página de busca ao submeter formulário', async ({ page }) => {
