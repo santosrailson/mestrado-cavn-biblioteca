@@ -12,21 +12,26 @@ logger = logging.getLogger(__name__)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def processar_arquivo_async(self, arquivo_id: str) -> dict:
+def processar_arquivo_async(self, arquivo_id: str, request_id: str = "") -> dict:
     """Processa um arquivo em background (checksum, mime, thumbnail, OCR).
 
-    O correlation ID da requisição original é passado via cabeçalho da task
-    (``x-request-id``), preservando compatibilidade com workers antigos durante
-    deploys rolantes, e repassado para o ``ContextVar`` de correlation ID para
-    que os logs de processamento carreguem o mesmo ID.
-    """
-    request_id = ""
-    token = None
-    if self.request.headers:
-        request_id = self.request.headers.get("x-request-id", "")
+    O correlation ID da requisição original pode vir via cabeçalho da task
+    (``x-request-id``) ou pelo kwarg legado ``request_id``. O cabeçalho tem
+    precedência. Essa dualidade mantém compatibilidade bidirecional durante
+    deploys rolantes: producers antigos ainda enviam o kwarg, enquanto workers
+    antigos ignoram o cabeçalho desconhecido e executam com ID vazio.
 
-    if request_id:
-        token = request_id_var.set(request_id)
+    O ID repassado para o ``ContextVar`` de correlation ID garante que os logs
+    de processamento carreguem o mesmo ``request_id`` da requisição original.
+    """
+    header_id = ""
+    if self.request.headers:
+        header_id = self.request.headers.get("x-request-id", "")
+
+    effective_request_id = header_id or request_id
+    token = None
+    if effective_request_id:
+        token = request_id_var.set(effective_request_id)
 
     try:
         arquivo = Arquivo.objects.get(pk=arquivo_id)
