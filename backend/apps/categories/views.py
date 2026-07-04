@@ -41,7 +41,13 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     @cached_response("categories", ttl=300)
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        logger.info("listando_categorias", extra={"total": queryset.count(), "user": request.user.email if request.user.is_authenticated else "anonymous"})
+        logger.info(
+            "listando_categorias",
+            extra={
+                "total": queryset.count(),
+                "autenticado": request.user.is_authenticated,
+            },
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
