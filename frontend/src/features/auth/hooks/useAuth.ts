@@ -75,7 +75,7 @@ export function useAuthSync() {
   }));
 
   // Valida sessão ao abrir o app se houver usuário em cache local
-  const { data, isError } = useQuery({
+  const { data } = useQuery({
     queryKey: ['auth-session-validate'],
     queryFn: async () => {
       const res = await api.get<Usuario>('/auth/me/');
@@ -91,12 +91,6 @@ export function useAuthSync() {
       setAuth(data);
     }
   }, [data, setAuth]);
-
-  useEffect(() => {
-    if (isError) {
-      logout();
-    }
-  }, [isError, logout]);
 
   useEffect(() => {
     const handleLogout = () => logout();
