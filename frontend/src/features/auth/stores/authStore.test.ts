@@ -63,8 +63,9 @@ describe('authStore', () => {
     expect(result.current.hasRole(['curador'])).toBe(true);
   });
 
-  it('isAuthenticated não é persistido no localStorage', () => {
-    const persisted = JSON.parse(localStorage.getItem('cavn-auth') || '{"state":{}}');
-    expect(persisted.state).not.toHaveProperty('isAuthenticated');
+  it('não persiste user no localStorage', () => {
+    const { result } = renderHook(() => useAuthStoreWithSelectors());
+    act(() => result.current.setAuth(userFixture));
+    expect(localStorage.getItem('cavn-auth')).toBeNull();
   });
 });
