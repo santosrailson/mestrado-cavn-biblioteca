@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAuthStore, useAuthStoreWithSelectors } from './authStore';
 import { renderHook } from '@testing-library/react';
 import { act } from 'react';
 import { Usuario } from '@/shared/types';
+import { queryClient } from '@/shared/lib/queryClient';
 
 const userFixture: Usuario = {
   id: '1',
@@ -67,5 +68,18 @@ describe('authStore', () => {
     const { result } = renderHook(() => useAuthStoreWithSelectors());
     act(() => result.current.setAuth(userFixture));
     expect(localStorage.getItem('cavn-auth')).toBeNull();
+  });
+
+  it('limpa o cache do React Query ao fazer logout', () => {
+    const clearSpy = vi.spyOn(queryClient, 'clear');
+
+    const { result } = renderHook(() => useAuthStoreWithSelectors());
+    act(() => result.current.setAuth(userFixture));
+    act(() => result.current.logout());
+
+    expect(clearSpy).toHaveBeenCalledTimes(1);
+    expect(result.current.user).toBeNull();
+
+    clearSpy.mockRestore();
   });
 });

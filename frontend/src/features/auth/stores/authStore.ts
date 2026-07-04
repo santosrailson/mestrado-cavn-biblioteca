@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Usuario, PerfilUsuario } from '@/shared/types';
+import { queryClient } from '@/shared/lib/queryClient';
 
 interface AuthState {
   user: Usuario | null;
@@ -20,6 +21,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
   logout: () => {
     set({ user: null });
+    queryClient.clear();
   },
   hasRole: (roles) => {
     const user = get().user;
