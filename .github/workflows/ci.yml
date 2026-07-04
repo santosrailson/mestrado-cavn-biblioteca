@@ -48,6 +48,9 @@ jobs:
           pip install -r requirements.txt
       - name: Lint com Ruff
         run: ruff check apps config
+      - name: Type checking com mypy (não bloqueante nesta fase)
+        continue-on-error: true
+        run: mypy apps config
       - name: Auditoria de dependências (pip-audit)
         run: |
           pip install --quiet pip-audit

@@ -38,3 +38,13 @@ known-first-party = ["apps", "config"]
 "apps/*/serializers.py" = ["N815"]
 "apps/documents/tasks.py" = ["B904"]
 "apps/core/validators.py" = ["SIM105"]
+
+[tool.mypy]
+python_version = "3.13"
+plugins = ["mypy_django_plugin.main"]
+ignore_missing_imports = true
+exclude = ["migrations/", ".venv", ".venv-linux"]
+check_untyped_defs = false
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
