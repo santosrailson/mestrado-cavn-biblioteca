@@ -1,8 +1,9 @@
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
 from apps.core.constants import DocumentStatus, UserRole
-from apps.documents.models import Document
+from apps.documents.models import Arquivo, Document
 from apps.users.tests.factories import UserFactory
 
 
@@ -146,3 +147,37 @@ class TestDocumentPermissions:
         doc = Document.objects.create(titulo="Oculto", status=DocumentStatus.DRAFT)
         response = api_client.get(f"/api/v1/documentos/{doc.slug}/")
         assert response.status_code == 404
+
+
+@pytest.mark.django_db
+class TestArquivoDeletePermission:
+    def test_owner_can_delete_own_file(self, api_client):
+        owner = UserFactory(role=UserRole.CATALOGUER)
+        doc = Document.objects.create(
+            titulo="Doc com Arquivo", status=DocumentStatus.DRAFT, created_by=owner
+        )
+        arquivo = Arquivo.objects.create(
+            documento=doc,
+            arquivo=SimpleUploadedFile("a.txt", b"conteudo de teste"),
+            tipo_arquivo="original",
+        )
+        api_client.force_authenticate(user=owner)
+        response = api_client.delete(f"/api/v1/documentos/arquivos/{arquivo.pk}/")
+        assert response.status_code == 204
+        assert not Arquivo.objects.filter(pk=arquivo.pk).exists()
+
+    def test_cataloguer_cannot_delete_others_file(self, api_client):
+        owner = UserFactory(role=UserRole.CATALOGUER)
+        attacker = UserFactory(role=UserRole.CATALOGUER)
+        doc = Document.objects.create(
+            titulo="Doc Alheio", status=DocumentStatus.DRAFT, created_by=owner
+        )
+        arquivo = Arquivo.objects.create(
+            documento=doc,
+            arquivo=SimpleUploadedFile("a.txt", b"conteudo de teste"),
+            tipo_arquivo="original",
+        )
+        api_client.force_authenticate(user=attacker)
+        response = api_client.delete(f"/api/v1/documentos/arquivos/{arquivo.pk}/")
+        assert response.status_code == 403
+        assert Arquivo.objects.filter(pk=arquivo.pk).exists()
