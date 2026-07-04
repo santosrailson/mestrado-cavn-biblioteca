@@ -275,6 +275,11 @@ class ArquivoViewSet(viewsets.ModelViewSet):
         return [AllowAny()]
 
     def perform_create(self, serializer):
+        documento = serializer.validated_data.get("documento")
+        if not CanEditDocument().has_object_permission(self.request, self, documento):
+            raise PermissionDenied(
+                "Você não tem permissão para adicionar arquivos a este documento."
+            )
         arquivo = serializer.save()
         processar_arquivo_async.delay(str(arquivo.pk))
 
