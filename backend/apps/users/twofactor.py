@@ -13,6 +13,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.users.models import User
+from apps.users.ratelimit import drf_ratelimit
 
 
 def _generate_qr_svg(provisioning_uri: str) -> str:
@@ -49,6 +50,7 @@ def _generate_qr_svg(provisioning_uri: str) -> str:
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@drf_ratelimit(group="twofactor_status", rate="10/m")
 def twofactor_status(request):
     """Retorna se o usuário tem 2FA ativo."""
     user: User = request.user
@@ -58,6 +60,7 @@ def twofactor_status(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@drf_ratelimit(group="twofactor_setup", rate="5/m")
 def twofactor_setup(request):
     """Gera uma nova chave TOTP e retorna URI + QR code para configurar o app.
 
@@ -97,6 +100,7 @@ def twofactor_setup(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@drf_ratelimit(group="twofactor_verify_setup", rate="5/m")
 def twofactor_verify_setup(request):
     """Confirma a configuração do 2FA verificando um token do authenticator."""
     user: User = request.user
@@ -121,6 +125,7 @@ def twofactor_verify_setup(request):
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@drf_ratelimit(group="twofactor_disable", rate="5/m")
 def twofactor_disable(request):
     """Desativa o 2FA para o usuário autenticado."""
     user: User = request.user
@@ -133,6 +138,7 @@ def twofactor_disable(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@drf_ratelimit(group="twofactor_login", rate="5/m")
 def twofactor_login(request):
     """Segunda etapa do login: verifica o token 2FA e emite cookies JWT.
 
