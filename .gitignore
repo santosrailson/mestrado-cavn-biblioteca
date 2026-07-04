@@ -85,6 +85,7 @@ frontend/playwright/.cache/
 frontend/e2e/.auth/
 
 # =============================================================================
-# Docker / infraestrutura
+# Agent workflow / skill scratch
 # =============================================================================
+.superpowers/sdd/
 *.pid
