@@ -1580,6 +1580,7 @@ O cache do React Query (documentos admin, usuários, tags, auditoria) permanece 
 
 **Files:**
 - Modify: `frontend/src/features/auth/stores/authStore.ts`
+- Modify: `frontend/src/features/auth/stores/authStore.test.ts` (já existe com outros testes)
 
 **Interfaces:**
 - Consumes: `queryClient` (`frontend/src/shared/lib/queryClient.ts:3`, já exportado como default e named export).
@@ -1587,33 +1588,28 @@ O cache do React Query (documentos admin, usuários, tags, auditoria) permanece 
 
 - [ ] **Step 1: Escrever o teste (deve falhar: cache não é limpo hoje)**
 
-Criar `frontend/src/features/auth/stores/authStore.test.ts`:
+`frontend/src/features/auth/stores/authStore.test.ts` **já existe** com outros testes (isAuthenticated derivado, hasRole, persistência). Adicionar um novo `it(...)` dentro do `describe('authStore', ...)` já existente, reaproveitando o `userFixture` já definido no topo do arquivo — não criar um arquivo novo nem um `describe` duplicado:
 
 ```ts
-import { describe, it, expect, vi } from 'vitest';
-import { useAuthStore } from './authStore';
 import { queryClient } from '@/shared/lib/queryClient';
 
-describe('authStore', () => {
+// ... dentro do describe('authStore', ...) já existente, como mais um `it`:
+
   it('limpa o cache do React Query ao fazer logout', () => {
     const clearSpy = vi.spyOn(queryClient, 'clear');
 
-    useAuthStore.getState().setAuth({
-      id: '1',
-      nome: 'Teste',
-      email: 'teste@cavn.br',
-      perfil: 'catalogador',
-      ativo: true,
-    } as never);
-    useAuthStore.getState().logout();
+    const { result } = renderHook(() => useAuthStoreWithSelectors());
+    act(() => result.current.setAuth(userFixture));
+    act(() => result.current.logout());
 
     expect(clearSpy).toHaveBeenCalledTimes(1);
-    expect(useAuthStore.getState().user).toBeNull();
+    expect(result.current.user).toBeNull();
 
     clearSpy.mockRestore();
   });
-});
 ```
+
+Adicionar `vi` ao import já existente de `'vitest'` no topo do arquivo (`import { describe, it, expect, vi, beforeEach } from 'vitest';`) e o novo import `import { queryClient } from '@/shared/lib/queryClient';`.
 
 - [ ] **Step 2: Rodar e confirmar que falha**
 
