@@ -84,6 +84,9 @@ frontend/blob-report/
 frontend/playwright/.cache/
 frontend/e2e/.auth/
 
+# Cobertura de testes
+frontend/coverage/
+
 # =============================================================================
 # Agent workflow / skill scratch
 # =============================================================================
