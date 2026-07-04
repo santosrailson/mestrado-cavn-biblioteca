@@ -35,16 +35,16 @@ test.describe('Fluxos completos com dados mockados', () => {
     });
 
     await page.route('**/api/v1/timeline/**', async (route) => {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: MOCK_TIMELINE.length, results: MOCK_TIMELINE }) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_TIMELINE) });
     });
 
     await page.route('**/api/v1/galeria/**', async (route) => {
       const url = route.request().url();
       if (url.includes('/albuns/')) {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: MOCK_GALLERY.length, results: MOCK_GALLERY }) });
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_GALLERY) });
       } else if (url.includes('/fotos/')) {
         const fotos = MOCK_GALLERY.flatMap((a) => a.fotos);
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: fotos.length, results: fotos }) });
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(fotos) });
       } else {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(MOCK_GALLERY) });
       }
@@ -58,6 +58,23 @@ test.describe('Fluxos completos com dados mockados', () => {
       await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ detail: 'Unauthorized' }) });
     });
 
+    await page.route('**/api/v1/auth/refresh/', async (route) => {
+      await route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ detail: 'Unauthorized' }) });
+    });
+
+    // Configurações do site
+    await page.route('**/api/v1/config/', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          { id: 'cfg-001', chave: 'site.titulo', valor: 'Repositório Digital CAVN', tipo: 'string', descricao: '', updated_at: '2024-01-01T00:00:00Z' },
+          { id: 'cfg-002', chave: 'site.subtitulo', valor: 'Acervo histórico, fotográfico e documental', tipo: 'string', descricao: '', updated_at: '2024-01-01T00:00:00Z' },
+          { id: 'cfg-003', chave: 'site.email_contato', valor: 'cavn@ufpb.br', tipo: 'string', descricao: '', updated_at: '2024-01-01T00:00:00Z' },
+        ]),
+      });
+    });
+
     // Health check
     await page.route('**/api/v1/health/', async (route) => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ status: 'ok' }) });
@@ -67,34 +84,27 @@ test.describe('Fluxos completos com dados mockados', () => {
   test('Fluxo completo: Home → Lista de documentos → Detalhe do documento', async ({ page }) => {
     await page.goto('/');
 
-    // Verifica hero e elementos principais da home
     await expect(page.locator('h1')).toBeVisible();
     await expect(page.locator('nav')).toBeVisible();
 
-    // Navega para listagem de documentos
     await page.goto('/busca');
-    await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/busca/);
 
-    // Clica no primeiro documento da lista
     const docLink = page.locator(`a[href*="/documentos/${MOCK_DOCUMENTS[0].slug}"]`).first();
-    if (await docLink.isVisible()) {
-      await docLink.click();
-      await expect(page).toHaveURL(new RegExp(MOCK_DOCUMENTS[0].slug));
-      await expect(page.locator('body')).toContainText(MOCK_DOCUMENTS[0].titulo);
-    }
+    await expect(docLink).toBeVisible();
+    await docLink.click();
+    await expect(page).toHaveURL(new RegExp(MOCK_DOCUMENTS[0].slug));
+    await expect(page.locator('body')).toContainText(MOCK_DOCUMENTS[0].titulo);
   });
 
   test('Fluxo completo: Busca por termo encontra resultados', async ({ page }) => {
     await page.goto('/busca?q=Fundação');
-    await page.waitForTimeout(500);
-
     await expect(page.locator('body')).toContainText(/Fundaç[ãa]o/);
   });
 
   test('Fluxo completo: Busca sem resultados exibe mensagem', async ({ page }) => {
     await page.goto('/busca?q=ZZZZNaoExiste9999');
-    await page.waitForTimeout(500);
+    await expect(page.locator('body')).toContainText(/nenhum documento encontrado/i);
   });
 
   test('Fluxo completo: Navegação entre todas as páginas públicas', async ({ page }) => {
@@ -111,9 +121,8 @@ test.describe('Fluxos completos com dados mockados', () => {
 
     for (const { path } of pages) {
       await page.goto(path);
-      await page.waitForTimeout(300);
-      const ok = page.url().includes(path) || page.url().includes('/login');
-      expect(ok).toBeTruthy();
+      await expect(page.locator('body')).toBeVisible();
+      await expect(page).toHaveURL(new RegExp(`(${path}|/login)`));
     }
   });
 
@@ -152,21 +161,20 @@ test.describe('Fluxos completos com dados mockados', () => {
       });
     });
 
-    await page.goto('/login');
-    await page.waitForTimeout(300);
+    await page.goto('/admin');
+    await expect(page).toHaveURL(/\/login/);
 
     const emailInput = page.locator('input[type="email"]').first();
-    if (await emailInput.isVisible()) {
-      await emailInput.fill('admin@cavn.ufpb.br');
-      await page.locator('input[type="password"]').first().fill('Senha@Forte123');
-      await page.locator('button[type="submit"]').first().click();
-      await page.waitForTimeout(1000);
-    }
+    await expect(emailInput).toBeVisible();
+    await emailInput.fill('admin@cavn.ufpb.br');
+    await page.locator('input[type="password"]').first().fill('Senha@Forte123');
+    await page.locator('button[type="submit"]').first().click();
+
+    await expect(page).toHaveURL(/\/admin/);
   });
 
   test('Fluxo completo: Acessar área admin sem auth é redirecionado para login', async ({ page }) => {
     await page.goto('/admin');
-    await page.waitForTimeout(500);
     await expect(page).toHaveURL(/\/login/);
   });
 
@@ -177,23 +185,20 @@ test.describe('Fluxos completos com dados mockados', () => {
 
   test('Fluxo completo: Política de privacidade carrega', async ({ page }) => {
     await page.goto('/politica-de-privacidade');
-    await page.waitForTimeout(300);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Fluxo completo: Termo de uso carrega', async ({ page }) => {
     await page.goto('/termo-de-uso');
-    await page.waitForTimeout(300);
     await expect(page.locator('body')).toBeVisible();
   });
 
   test('Fluxo completo: Timeline exibe eventos', async ({ page }) => {
     await page.goto('/linha-do-tempo');
-    await page.waitForTimeout(500);
-
     await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator('body')).toContainText(MOCK_TIMELINE[0].titulo);
     const bodyText = await page.locator('body').innerText();
     const foundEvent = MOCK_TIMELINE.some((e) => bodyText.includes(e.titulo));
-    expect(foundEvent || true).toBeTruthy();
+    expect(foundEvent).toBe(true);
   });
 });

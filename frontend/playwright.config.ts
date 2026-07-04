@@ -24,7 +24,7 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: 'npm run dev',
+        command: 'VITE_API_URL=/api/v1 npm run dev',
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 30000,
