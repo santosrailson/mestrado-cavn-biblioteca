@@ -14,6 +14,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
+from apps.audit.services import AuditoriaService
 from apps.users.models import User
 from apps.users.permissions import IsAdministrator, IsOwnerOrAdministrator
 from apps.users.ratelimit import RateLimitedMixin, drf_ratelimit
@@ -132,6 +133,10 @@ class CustomTokenObtainPairView(RateLimitedMixin, TokenObtainPairView):
             _ensure_csrf_cookie(request)
             if user:
                 response.data["usuario"] = UserSerializer(user).data
+                AuditoriaService.registrar(
+                    usuario=user, acao="login", entidade="User",
+                    entidade_id=str(user.pk), request=request,
+                )
         return response
 
 
@@ -180,6 +185,12 @@ def logout_view(request):
             token.blacklist()
         except Exception:
             pass
+
+    if request.user and request.user.is_authenticated:
+        AuditoriaService.registrar(
+            usuario=request.user, acao="logout", entidade="User",
+            entidade_id=str(request.user.pk), request=request,
+        )
 
     response = Response({"sucesso": True, "mensagem": "Logout realizado com sucesso."})
     _clear_auth_cookies(response)
