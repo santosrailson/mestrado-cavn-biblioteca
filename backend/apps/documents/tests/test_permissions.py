@@ -150,7 +150,7 @@ class TestDocumentPermissions:
 
 
 @pytest.mark.django_db
-class TestArquivoDeletePermission:
+class TestArquivoPermission:
     def test_owner_can_delete_own_file(self, api_client):
         owner = UserFactory(role=UserRole.CATALOGUER)
         doc = Document.objects.create(
@@ -181,3 +181,40 @@ class TestArquivoDeletePermission:
         response = api_client.delete(f"/api/v1/documentos/arquivos/{arquivo.pk}/")
         assert response.status_code == 403
         assert Arquivo.objects.filter(pk=arquivo.pk).exists()
+
+    def test_cataloguer_cannot_attach_file_to_others_document(self, api_client):
+        owner = UserFactory(role=UserRole.CATALOGUER)
+        attacker = UserFactory(role=UserRole.CATALOGUER)
+        doc = Document.objects.create(
+            titulo="Documento Alheio", status=DocumentStatus.DRAFT, created_by=owner
+        )
+        api_client.force_authenticate(user=attacker)
+        response = api_client.post(
+            "/api/v1/documentos/arquivos/",
+            {
+                "documento": str(doc.pk),
+                "arquivo": SimpleUploadedFile("teste.txt", b"conteudo malicioso"),
+                "tipo_arquivo": "original",
+            },
+            format="multipart",
+        )
+        assert response.status_code == 403
+        assert not Arquivo.objects.filter(documento=doc).exists()
+
+    def test_owner_can_attach_file_to_own_draft(self, api_client):
+        owner = UserFactory(role=UserRole.CATALOGUER)
+        doc = Document.objects.create(
+            titulo="Meu Documento", status=DocumentStatus.DRAFT, created_by=owner
+        )
+        api_client.force_authenticate(user=owner)
+        response = api_client.post(
+            "/api/v1/documentos/arquivos/",
+            {
+                "documento": str(doc.pk),
+                "arquivo": SimpleUploadedFile("teste.txt", b"conteudo legitimo"),
+                "tipo_arquivo": "original",
+            },
+            format="multipart",
+        )
+        assert response.status_code == 201
+        assert Arquivo.objects.filter(documento=doc).exists()
