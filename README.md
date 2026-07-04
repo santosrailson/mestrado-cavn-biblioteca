@@ -2,7 +2,7 @@
 
 Sistema web completo para preservação, organização e disseminação do acervo histórico do **Colégio Agrícola Vidal de Negreiros (CAVN/UFPB)**.
 
-> **Status:** Aplicação madura, pronta para produção — backend Django, frontend React (SPA + PWA), admin moderno com Django Unfold, autenticação JWT em cookie httpOnly com 2FA (TOTP), 89 testes de backend passando, suíte E2E com Playwright e stack de deploy completa (Docker Compose de produção, Nginx + SSL, Celery, backups e Sentry).
+> **Status:** Aplicação madura, pronta para produção — backend Django, frontend React (SPA + PWA), admin moderno com Django Unfold, autenticação JWT em cookie httpOnly com 2FA (TOTP), 136 testes de backend passando, suíte E2E com Playwright e stack de deploy completa (Docker Compose de produção, Nginx + SSL, Celery, backups e Sentry).
 
 ---
 
@@ -10,7 +10,7 @@ Sistema web completo para preservação, organização e disseminação do acerv
 
 | Camada | Tecnologia |
 |--------|------------|
-| Backend | Django 4.2 + Django REST Framework + SimpleJWT |
+| Backend | Django 5.2 LTS + Django REST Framework + SimpleJWT |
 | Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
 | UI Admin | Django Unfold (moderna, responsiva e acessível) |
 | Banco de dados | PostgreSQL 16 (SQLite disponível para dev local) |
@@ -311,7 +311,7 @@ source .venv/bin/activate
 pytest
 ```
 
-Status atual: **89 testes passando** em 20 arquivos, cobrindo autenticação e JWT, 2FA (TOTP), permissões/RBAC, documentos, workflow de aprovação, serializers, categorias, tags, timeline, galeria, produção acadêmica, auditoria, configurações e validadores de upload.
+Status atual: **136 testes passando** em 28 arquivos, cobrindo autenticação e JWT, 2FA (TOTP), permissões/RBAC, documentos, workflow de aprovação, serializers, categorias, tags, timeline, galeria, produção acadêmica, auditoria, configurações e validadores de upload.
 
 ### Frontend
 
@@ -456,7 +456,7 @@ docker-compose up --build
 - [x] Acessibilidade básica (WCAG 2.1 / eMAG)
 - [x] PWA (service worker via Workbox)
 - [x] Docker Compose funcional (dev e produção)
-- [x] Testes backend passando (91 testes)
+- [x] Testes backend passando (136 testes)
 - [x] Testes E2E com Playwright
 - [x] Deploy em produção com Nginx + SSL, Celery, backups e Sentry
 - [x] Otimização de queries e cache Redis em endpoints públicos
