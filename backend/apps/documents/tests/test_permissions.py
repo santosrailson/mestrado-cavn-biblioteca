@@ -2,6 +2,7 @@ import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from rest_framework.test import APIClient
 
+from apps.audit.models import Auditoria
 from apps.core.constants import DocumentStatus, UserRole
 from apps.documents.models import Arquivo, Document
 from apps.users.tests.factories import UserFactory
@@ -218,3 +219,22 @@ class TestArquivoPermission:
         )
         assert response.status_code == 201
         assert Arquivo.objects.filter(documento=doc).exists()
+
+    def test_delete_arquivo_gera_registro_de_auditoria(self, api_client):
+        owner = UserFactory(role=UserRole.CATALOGUER)
+        doc = Document.objects.create(
+            titulo="Doc com Arquivo Auditado", status=DocumentStatus.DRAFT, created_by=owner
+        )
+        arquivo = Arquivo.objects.create(
+            documento=doc,
+            arquivo=SimpleUploadedFile("a.txt", b"conteudo de teste"),
+            tipo_arquivo="original",
+        )
+        api_client.force_authenticate(user=owner)
+
+        response = api_client.delete(f"/api/v1/documentos/arquivos/{arquivo.pk}/")
+
+        assert response.status_code == 204
+        assert Auditoria.objects.filter(
+            entidade="Arquivo", entidade_id=str(arquivo.pk), acao="excluir"
+        ).exists()

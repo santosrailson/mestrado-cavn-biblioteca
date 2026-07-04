@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from apps.audit.services import AuditoriaService
 from apps.categories.models import Categoria
 from apps.core.cache import cached_response
 from apps.documents.filters import DocumentFilter
@@ -287,7 +288,12 @@ class ArquivoViewSet(viewsets.ModelViewSet):
         documento = instance.documento
         if not CanEditDocument().has_object_permission(self.request, self, documento):
             raise PermissionDenied("Você não tem permissão para remover este arquivo.")
+        arquivo_id = str(instance.pk)
         instance.delete()
+        AuditoriaService.registrar(
+            usuario=self.request.user, acao="excluir", entidade="Arquivo",
+            entidade_id=arquivo_id, request=self.request,
+        )
 
     @action(detail=True, methods=["get"], url_path="download")
     def download(self, request, pk=None):
