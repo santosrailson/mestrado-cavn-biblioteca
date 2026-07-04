@@ -189,6 +189,7 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+pip install pre-commit && pre-commit install
 cp .env.example .env
 # Edite .env conforme necessário. Para usar SQLite, defina DB_ENGINE=sqlite
 python manage.py migrate
