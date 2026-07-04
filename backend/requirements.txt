@@ -1,5 +1,5 @@
 # Core Django
-Django>=5.2,<5.3  # LTS (suporte estendido até abr/2028)
+Django>=6.0.6,<6.1  # LTS (suporte estendido até abr/2028)
 
 # API REST
 djangorestframework>=3.17.1
@@ -7,10 +7,10 @@ djangorestframework-simplejwt>=5.5.1
 
 # Auth e segurança
 django-ratelimit>=4.1.0
-django-csp>=3.8,<4.0
-django-axes>=6.5.2,<7.0
+django-csp>=4.0,<5.0
+django-axes>=8.3.1,<9.0
 django-otp>=1.7.0
-qrcode>=8.0
+qrcode>=8.2
 pyotp>=2.10.0
 
 # CORS e headers
@@ -18,44 +18,44 @@ django-cors-headers>=4.9.0
 django-cleanup>=9.0.0
 
 # Filtros, documentação e admin
-django-filter>=25.1
+django-filter>=25.2
 drf-spectacular>=0.29.0
-django-unfold>=0.22.0
+django-unfold>=0.99.1
 
 # Banco de dados e cache
 psycopg2-binary>=2.9.12
-redis>=5.0.0
-django-redis>=6.0.0
+redis>=8.0.1
+django-redis>=7.0.0
 
 # Tarefas assíncronas
-celery>=5.3.0
+celery>=5.6.3
 
 # Imagens e arquivos
-Pillow>=10.1.0
+Pillow>=12.3.0
 python-magic>=0.4.27
-pytesseract>=0.3.10
+pytesseract>=0.3.13
 
 # Monitoramento Celery
-flower>=2.0.0
+flower>=2.0.1
 
 # Variáveis de ambiente
-python-dotenv>=1.0.0
+python-dotenv>=1.2.2
 
 # Testes
-pytest-django>=4.7.0
-factory-boy>=3.3.0
-pytest-factoryboy>=2.6.0
-freezegun>=1.4.0
+pytest-django>=4.12.0
+factory-boy>=3.3.3
+pytest-factoryboy>=2.8.1
+freezegun>=1.5.5
 
 # Qualidade de código (opcional em desenvolvimento)
-black>=23.12.0
-ruff>=0.1.9
-mypy>=1.7.0
-django-stubs>=4.2.7
+black>=26.5.1
+ruff>=0.15.20
+mypy>=2.1.0
+django-stubs>=6.0.6
 
 # Servidor WSGI e arquivos estáticos
-gunicorn>=22.0.0
-whitenoise>=6.6.0
+gunicorn>=26.0.0
+whitenoise>=6.12.0
 
 # Monitoramento (opcional)
-sentry-sdk>=2.0.0
+sentry-sdk>=2.64.0
