@@ -15,13 +15,10 @@ test.describe('Busca', () => {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          dados: [],
-          total: 0,
-          pagina: 1,
-          limite: 20,
-          totalPaginas: 0,
-          temProxima: false,
-          temAnterior: false,
+          count: 0,
+          next: null,
+          previous: null,
+          results: [],
         }),
       })
     );
