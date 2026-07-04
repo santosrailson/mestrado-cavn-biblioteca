@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 
 from apps.core.constants import UserRole
 from apps.gallery.models import Album, Foto
+from apps.gallery.tests.factories import AlbumFactory
 from apps.users.models import User
 
 
@@ -86,3 +87,34 @@ def test_fotos_filter_by_album(api_client):
     results = response.data["results"]
     ids = [f["id"] for f in results]
     assert str(foto_a.pk) in ids
+
+
+@pytest.mark.django_db
+class TestAlbumRBAC:
+    def test_visitor_cannot_create(self, api_client, visitante):
+        api_client.force_authenticate(user=visitante)
+        response = api_client.post(
+            "/api/v1/galeria/albuns/", {"titulo": "Álbum Novo", "slug": "album-novo"}
+        )
+        assert response.status_code == 403
+
+    def test_cataloguer_cannot_create(self, api_client, catalogador):
+        api_client.force_authenticate(user=catalogador)
+        response = api_client.post(
+            "/api/v1/galeria/albuns/", {"titulo": "Álbum Novo", "slug": "album-novo"}
+        )
+        assert response.status_code == 403
+
+    def test_curator_can_create(self, api_client, curador):
+        api_client.force_authenticate(user=curador)
+        response = api_client.post(
+            "/api/v1/galeria/albuns/", {"titulo": "Álbum Novo", "slug": "album-novo"}
+        )
+        assert response.status_code == 201
+
+    def test_cataloguer_cannot_delete(self, api_client, catalogador):
+        album = AlbumFactory()
+        api_client.force_authenticate(user=catalogador)
+        response = api_client.delete(f"/api/v1/galeria/albuns/{album.slug}/")
+        assert response.status_code == 403
+        assert Album.objects.filter(pk=album.pk).exists()

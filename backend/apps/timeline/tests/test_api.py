@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 from apps.core.constants import DocumentStatus, UserRole
 from apps.documents.models import Document
 from apps.timeline.models import TimelineEvent
+from apps.timeline.tests.factories import TimelineEventFactory
 from apps.users.models import User
 
 
@@ -134,3 +135,34 @@ def test_evento_sem_documento_mantem_documento_nulo(api_client):
 
     item = next(e for e in response.data if e["titulo"] == "Evento isolado")
     assert item["documento"] is None
+
+
+@pytest.mark.django_db
+class TestTimelineRBAC:
+    def test_visitor_cannot_create(self, api_client, visitante):
+        api_client.force_authenticate(user=visitante)
+        response = api_client.post(
+            "/api/v1/timeline/eventos/", {"titulo": "Evento Novo", "data_evento": "1970-01-01"}
+        )
+        assert response.status_code == 403
+
+    def test_cataloguer_cannot_create(self, api_client, catalogador):
+        api_client.force_authenticate(user=catalogador)
+        response = api_client.post(
+            "/api/v1/timeline/eventos/", {"titulo": "Evento Novo", "data_evento": "1970-01-01"}
+        )
+        assert response.status_code == 403
+
+    def test_curator_can_create(self, api_client, curador):
+        api_client.force_authenticate(user=curador)
+        response = api_client.post(
+            "/api/v1/timeline/eventos/", {"titulo": "Evento Novo", "data_evento": "1970-01-01"}
+        )
+        assert response.status_code == 201
+
+    def test_cataloguer_cannot_delete(self, api_client, catalogador):
+        evento = TimelineEventFactory()
+        api_client.force_authenticate(user=catalogador)
+        response = api_client.delete(f"/api/v1/timeline/eventos/{evento.pk}/")
+        assert response.status_code == 403
+        assert TimelineEvent.objects.filter(pk=evento.pk).exists()
