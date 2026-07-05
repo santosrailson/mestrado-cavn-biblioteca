@@ -67,7 +67,9 @@ docker compose -f "${COMPOSE_FILE}" exec backend python manage.py collectstatic 
 
 echo "==> Aguardando healthcheck do backend..."
 for i in {1..30}; do
-  HTTP_BACKEND=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8000/api/v1/health/ || echo "000")
+  # Envia X-Forwarded-Proto: https como o Nginx faria, evitando o redirect 301
+  # do SECURE_SSL_REDIRECT quando testado diretamente na porta interna do backend.
+  HTTP_BACKEND=$(curl -s -o /dev/null -w "%{http_code}" -H "X-Forwarded-Proto: https" http://127.0.0.1:8000/api/v1/health/ || echo "000")
   if [[ "${HTTP_BACKEND}" == "200" ]]; then
     break
   fi
