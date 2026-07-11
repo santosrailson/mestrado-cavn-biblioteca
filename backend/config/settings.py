@@ -22,9 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # =============================================================================
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-key-change-in-production")
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
-ALLOWED_HOSTS = [
-    h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()
-]
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
 ]
@@ -39,13 +37,10 @@ if not DEBUG:
             "SECRET_KEY deve ser configurado com um valor seguro em produção."
         )
     if not ALLOWED_HOSTS:
-        raise ImproperlyConfigured(
-            "ALLOWED_HOSTS não pode estar vazio quando DEBUG=False."
-        )
+        raise ImproperlyConfigured("ALLOWED_HOSTS não pode estar vazio quando DEBUG=False.")
     if "*" in ALLOWED_HOSTS:
         raise ImproperlyConfigured(
-            "ALLOWED_HOSTS não pode conter '*' em produção — liste os domínios "
-            "explicitamente."
+            "ALLOWED_HOSTS não pode conter '*' em produção — liste os domínios explicitamente."
         )
 
 # =============================================================================
@@ -79,6 +74,7 @@ THIRD_PARTY_APPS = [
 # django-csp é opcional até que as dependências sejam reinstaladas
 try:
     import csp  # noqa: F401
+
     THIRD_PARTY_APPS.append("csp")
     CSP_AVAILABLE = True
 except ImportError:
@@ -182,9 +178,7 @@ AUTH_USER_MODEL = "users.User"
 # Validação de senhas
 # =============================================================================
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -348,7 +342,7 @@ CACHES = {
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("DATA_UPLOAD_MAX_MEMORY_SIZE", "104857600"))
 FILE_UPLOAD_MAX_MEMORY_SIZE = int(os.getenv("FILE_UPLOAD_MAX_MEMORY_SIZE", "104857600"))
 MAX_UPLOAD_SIZE_BYTES = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", "104857600"))
-ALLOW_ARCHIVE_UPLOADS = os.getenv("ALLOW_ARCHIVE_UPLOADS", "True").lower() in (
+ALLOW_ARCHIVE_UPLOADS = os.getenv("ALLOW_ARCHIVE_UPLOADS", "False").lower() in (
     "true",
     "1",
     "yes",
@@ -378,6 +372,7 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "noreply@cavn.ufpb.br")
 # =============================================================================
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
+
 
 class _JsonFormatter(logging.Formatter):
     """Formata cada linha de log como JSON para ingestão por ferramentas de observabilidade."""
@@ -460,13 +455,14 @@ USE_X_FORWARDED_HOST = True
 # ser desabilitado com DUAS variáveis explícitas (defesa em profundidade contra
 # desativação acidental em produção): DISABLE_HTTPS_ENFORCEMENT e
 # ACKNOWLEDGE_INSECURE_HTTPS_DISABLED, ambas "True".
-_DISABLE_HTTPS_ENFORCEMENT_REQUESTED = (
-    os.getenv("DISABLE_HTTPS_ENFORCEMENT", "False").lower() in ("true", "1", "yes")
+_DISABLE_HTTPS_ENFORCEMENT_REQUESTED = os.getenv("DISABLE_HTTPS_ENFORCEMENT", "False").lower() in (
+    "true",
+    "1",
+    "yes",
 )
-_ACKNOWLEDGE_INSECURE_HTTPS_DISABLED = (
-    os.getenv("ACKNOWLEDGE_INSECURE_HTTPS_DISABLED", "False").lower()
-    in ("true", "1", "yes")
-)
+_ACKNOWLEDGE_INSECURE_HTTPS_DISABLED = os.getenv(
+    "ACKNOWLEDGE_INSECURE_HTTPS_DISABLED", "False"
+).lower() in ("true", "1", "yes")
 if _DISABLE_HTTPS_ENFORCEMENT_REQUESTED and not _ACKNOWLEDGE_INSECURE_HTTPS_DISABLED:
     raise ImproperlyConfigured(
         "DISABLE_HTTPS_ENFORCEMENT=True exige também "
@@ -506,9 +502,11 @@ else:
     SESSION_COOKIE_SECURE = os.getenv(
         "SESSION_COOKIE_SECURE", str(_force_secure_cookies)
     ).lower() in ("true", "1", "yes")
-    CSRF_COOKIE_SECURE = os.getenv(
-        "CSRF_COOKIE_SECURE", str(_force_secure_cookies)
-    ).lower() in ("true", "1", "yes")
+    CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", str(_force_secure_cookies)).lower() in (
+        "true",
+        "1",
+        "yes",
+    )
 
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_BROWSER_XSS_FILTER = True

@@ -4,11 +4,18 @@ from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
 from apps.audit.services import AuditoriaService
+from apps.core.cache import invalidate_cache_prefix
 from apps.documents.models import Document
 
 _AUDIT_FIELDS = [
-    "titulo", "status", "tipo_documento", "data_documento",
-    "descricao", "resumo", "direitos", "idioma",
+    "titulo",
+    "status",
+    "tipo_documento",
+    "data_documento",
+    "descricao",
+    "resumo",
+    "direitos",
+    "idioma",
 ]
 
 
@@ -24,9 +31,7 @@ def capture_document_pre_save(sender, instance, **kwargs):
     """Captura o estado anterior para diff de auditoria."""
     if instance.pk:
         try:
-            instance._pre_save_snapshot = _snapshot(
-                Document.objects.get(pk=instance.pk)
-            )
+            instance._pre_save_snapshot = _snapshot(Document.objects.get(pk=instance.pk))
         except Document.DoesNotExist:
             instance._pre_save_snapshot = {}
     else:
@@ -48,6 +53,8 @@ def log_document_save(sender, instance, created, **kwargs):
         dados_anteriores=dados_anteriores,
         dados_novos=dados_novos,
     )
+    for prefix in ("documents:list", "documents:detail", "search"):
+        invalidate_cache_prefix(prefix)
 
 
 @receiver(post_delete, sender=Document)
@@ -61,3 +68,5 @@ def log_document_delete(sender, instance, **kwargs):
         dados_anteriores=_snapshot(instance),
         dados_novos={},
     )
+    for prefix in ("documents:list", "documents:detail", "search"):
+        invalidate_cache_prefix(prefix)

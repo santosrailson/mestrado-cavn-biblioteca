@@ -76,7 +76,9 @@ const ProfilePage = lazy(() =>
   import('@/features/admin/pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
 );
 const PasswordRequestsPage = lazy(() =>
-  import('@/features/admin/pages/PasswordRequestsPage').then((m) => ({ default: m.PasswordRequestsPage }))
+  import('@/features/admin/pages/PasswordRequestsPage').then((m) => ({
+    default: m.PasswordRequestsPage,
+  }))
 );
 
 const NotFoundPage = lazy(() =>
@@ -179,13 +181,12 @@ const adminRoutes: RouteObject[] = [
   },
 ];
 
-export const router = createBrowserRouter([
-  {
-    element: <RootLayout />,
-    children: [
-      ...publicRoutes,
-      ...adminRoutes,
-      { path: '*', element: <NotFoundPage /> },
-    ],
-  },
-]);
+export const router = createBrowserRouter(
+  [
+    {
+      element: <RootLayout />,
+      children: [...publicRoutes, ...adminRoutes, { path: '*', element: <NotFoundPage /> }],
+    },
+  ],
+  { future: { v7_relativeSplatPath: true } }
+);

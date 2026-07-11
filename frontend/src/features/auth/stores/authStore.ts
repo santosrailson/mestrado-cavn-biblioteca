@@ -22,6 +22,9 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   logout: () => {
     set({ user: null });
     queryClient.clear();
+    if ('caches' in window) {
+      void caches.delete('media-cache');
+    }
   },
   hasRole: (roles) => {
     const user = get().user;

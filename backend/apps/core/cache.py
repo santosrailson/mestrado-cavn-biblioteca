@@ -16,7 +16,11 @@ def _make_cache_key(prefix: str, request, view_kwargs: dict | None = None) -> st
     params = tuple(sorted(request.query_params.items()))
     user_role = getattr(request.user, "role", "anonymous")
     kwargs_part = tuple(sorted((view_kwargs or {}).items()))
-    raw = f"{prefix}:{user_role}:{kwargs_part}:{params}"
+    try:
+        version = cache.get(f"api:cache-version:{prefix}", 1)
+    except Exception:  # pragma: no cover - cache indisponível
+        version = 1
+    raw = f"{prefix}:{version}:{user_role}:{kwargs_part}:{params}"
     return f"api:cache:{prefix}:{hashlib.sha256(raw.encode()).hexdigest()[:32]}"
 
 
@@ -46,7 +50,9 @@ def cached_response(prefix: str, ttl: int = 60):
                 cached = None
 
             if cached is not None:
-                return Response(cached["data"], status=cached.get("status", 200), headers=cached.get("headers"))
+                return Response(
+                    cached["data"], status=cached.get("status", 200), headers=cached.get("headers")
+                )
 
             response = view_method(view_instance, request, *args, **kwargs)
 
@@ -69,6 +75,10 @@ def cached_response(prefix: str, ttl: int = 60):
 
 
 def invalidate_cache_prefix(prefix: str) -> None:
-    """Invalida todas as chaves de cache de um prefixo (best-effort sem scan)."""
-    # Em produção com Redis, recomenda-se versionar o prefixo ou usar tags.
-    logger.info("cache_prefix_invalidate", extra={"prefix": prefix})
+    """Invalida um namespace sem executar SCAN/DELETE no Redis."""
+    key = f"api:cache-version:{prefix}"
+    try:
+        version = 2 if cache.add(key, 2, timeout=None) else cache.incr(key)
+        logger.info("cache_prefix_invalidated", extra={"prefix": prefix, "version": version})
+    except Exception as exc:  # pragma: no cover
+        logger.warning("cache_invalidation_error", extra={"prefix": prefix, "error": str(exc)})

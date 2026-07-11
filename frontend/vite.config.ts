@@ -6,7 +6,8 @@ import path from 'path';
 const manifest = {
   name: 'Repositório Digital CAVN',
   short_name: 'CAVN Digital',
-  description: 'Acervo histórico, fotográfico e documental do Colégio Agrícola Vidal de Negreiros - CAVN/UFPB',
+  description:
+    'Acervo histórico, fotográfico e documental do Colégio Agrícola Vidal de Negreiros - CAVN/UFPB',
   start_url: '/',
   display: 'standalone',
   background_color: '#ffffff',
@@ -46,16 +47,6 @@ export default defineConfig({
               cacheName: 'api-cache',
               expiration: { maxEntries: 50, maxAgeSeconds: 60 * 5 },
               networkTimeoutSeconds: 10,
-            },
-          },
-          {
-            urlPattern: /\/media\//i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'media-cache',
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 },
-              cacheableResponse: { statuses: [200] },
-              networkTimeoutSeconds: 5,
             },
           },
         ],
@@ -103,13 +94,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
-      exclude: [
-        'node_modules/',
-        'e2e/',
-        '**/*.d.ts',
-        '**/*.config.*',
-        'src/main.tsx',
-      ],
+      exclude: ['node_modules/', 'e2e/', '**/*.d.ts', '**/*.config.*', 'src/main.tsx'],
     },
   },
 });

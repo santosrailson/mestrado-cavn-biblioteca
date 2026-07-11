@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SEO } from './SEO';
+
+vi.mock('@/shared/hooks/useSystemConfig', () => ({
+  useSiteConfig: () => ({ titulo: '', descricao: '' }),
+}));
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 

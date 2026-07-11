@@ -7,6 +7,7 @@ from django.db.models import Count, Prefetch, Q
 from django.db.models import F as _F
 from django.http import HttpResponse
 from django.utils import timezone
+from django.utils.http import content_disposition_header
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
@@ -329,7 +330,8 @@ class ArquivoViewSet(viewsets.ModelViewSet):
 
         response = HttpResponse()
         response["Content-Type"] = arquivo.mime_type or "application/octet-stream"
-        response["Content-Disposition"] = f'inline; filename="{arquivo.nome_original}"'
+        response["Content-Disposition"] = content_disposition_header(True, arquivo.nome_original)
+        response["Cache-Control"] = "private, no-store"
         response["X-Accel-Redirect"] = f"/media-protected/{arquivo.arquivo.name}"
         return response
 

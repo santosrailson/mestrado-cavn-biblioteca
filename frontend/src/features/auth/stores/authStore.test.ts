@@ -87,4 +87,16 @@ describe('authStore', () => {
 
     clearSpy.mockRestore();
   });
+
+  it('remove cache legado de mídia ao fazer logout', () => {
+    const deleteSpy = vi.fn().mockResolvedValue(true);
+    Object.defineProperty(window, 'caches', {
+      configurable: true,
+      value: { delete: deleteSpy },
+    });
+
+    useAuthStore.getState().logout();
+
+    expect(deleteSpy).toHaveBeenCalledWith('media-cache');
+  });
 });

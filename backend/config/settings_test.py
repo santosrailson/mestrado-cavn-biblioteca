@@ -5,6 +5,7 @@ comportamentos de borda que atrapalham testes de API no test client.
 """
 
 import os
+import tempfile
 
 # Garante valores mínimos antes de importar o settings base, evitando que
 # as validações de produção (DEBUG=False / ALLOWED_HOSTS vazio) disparem
@@ -31,3 +32,6 @@ CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+# Isola uploads de teste do volume persistente da aplicação.
+MEDIA_ROOT = tempfile.mkdtemp(prefix="cavn-test-media-")
