@@ -16,7 +16,9 @@
 #   gpg --batch --yes --passphrase-file <(echo "$BACKUP_PASSPHRASE") \
 #       --decrypt db_20260101_020000.sql.gz.gpg > db_20260101_020000.sql.gz
 #
-# Envie os arquivos gerados para um storage externo periodicamente.
+# O envio externo pode ser feito via rclone. Quando BACKUP_OFFSITE_REQUIRED=true,
+# a ausência do rclone, do remote ou de uma verificação bem-sucedida interrompe
+# o backup para evitar uma falsa sensação de recuperação em desastre.
 # =============================================================================
 set -euo pipefail
 
@@ -90,17 +92,29 @@ find "${BACKUP_DIR}" -type f -name "db_*.sql.gz.gpg" -mtime +"${RETENTION_DAYS}"
 find "${BACKUP_DIR}" -type f -name "media_*.tar.gz.gpg" -mtime +"${RETENTION_DAYS}" -delete
 find "${BACKUP_DIR}" -type f -name "env_*.gpg" -mtime +"${RETENTION_DAYS}" -delete
 
-# Backup offsite via rclone (opcional)
-# Configure o rclone com um remote (ex: S3, Backblaze B2) e defina RCLONE_REMOTE
-# Exemplo:
-#   rclone config         # configure o remote uma vez
-#   RCLONE_REMOTE="s3:cavn-backups" bash scripts/backup.sh
-if [[ -n "${RCLONE_REMOTE:-}" ]] && command -v rclone &>/dev/null; then
-    echo "==> Sincronizando backups com storage externo (${RCLONE_REMOTE})..."
-    rclone sync "${BACKUP_DIR}/" "${RCLONE_REMOTE}/$(date +%Y/%m)/" --progress --checksum
-    echo "    Sincronização concluída."
+BACKUP_OFFSITE_ENABLED="${BACKUP_OFFSITE_ENABLED:-false}"
+BACKUP_OFFSITE_REQUIRED="${BACKUP_OFFSITE_REQUIRED:-false}"
+OFFSITE_PATH="${RCLONE_REMOTE:-}/$(date +%Y/%m)/"
+
+if [[ "${BACKUP_OFFSITE_ENABLED,,}" == "true" || "${BACKUP_OFFSITE_REQUIRED,,}" == "true" ]]; then
+  if [[ -z "${RCLONE_REMOTE:-}" ]]; then
+    echo "ERRO: backup externo exigido/habilitado, mas RCLONE_REMOTE não está configurado." >&2
+    exit 1
+  fi
+  if ! command -v rclone >/dev/null 2>&1; then
+    echo "ERRO: backup externo exigido/habilitado, mas rclone não está instalado." >&2
+    exit 1
+  fi
+
+  echo "==> Sincronizando backups com storage externo (${OFFSITE_PATH})..."
+  rclone copy "${BACKUP_DIR}/" "${OFFSITE_PATH}" --checksum --transfers=4 --checkers=8
+  rclone check "${BACKUP_DIR}/" "${OFFSITE_PATH}" --one-way
+  echo "    Sincronização e verificação concluídas."
+  OFFSITE_STATUS="ativo e verificado"
+else
+  OFFSITE_STATUS="desativado (configure BACKUP_OFFSITE_ENABLED=true quando houver um remote)"
 fi
 
 echo "==> Backup concluído com sucesso."
 echo "    Arquivos em: ${BACKUP_DIR}"
-echo "    Offsite: ${RCLONE_REMOTE:-não configurado (defina RCLONE_REMOTE para ativar)}"
+echo "    Offsite: ${OFFSITE_STATUS}"

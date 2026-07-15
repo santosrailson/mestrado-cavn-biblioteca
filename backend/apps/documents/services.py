@@ -3,11 +3,10 @@
 import logging
 
 from django.core.files.base import ContentFile
-from django.db import transaction
 from django.utils import timezone
 from PIL import Image
 
-from apps.core.constants import DocumentStatus
+from apps.core.constants import DocumentStatus, ProcessingStatus
 from apps.core.utils import calculate_sha256
 from apps.documents.models import Arquivo
 
@@ -63,9 +62,7 @@ class DocumentWorkflowService:
     def _transition(cls, document, new_status, user):
         current = document.status
         if new_status not in cls.VALID_TRANSITIONS.get(current, []):
-            raise WorkflowError(
-                f"Transição inválida de '{current}' para '{new_status}'."
-            )
+            raise WorkflowError(f"Transição inválida de '{current}' para '{new_status}'.")
         document.status = new_status
         if new_status == DocumentStatus.APPROVED:
             document.aprovado_por = user
@@ -159,6 +156,7 @@ def _run_ocr(arquivo) -> str:
             return pytesseract.image_to_string(img, lang="por+eng").strip()
         if arquivo.mime_type == "application/pdf":
             from pdf2image import convert_from_path  # type: ignore[import]
+
             pages = convert_from_path(arquivo.arquivo.path, dpi=150, first_page=1, last_page=5)
             return "\n\n".join(
                 pytesseract.image_to_string(p, lang="por+eng").strip() for p in pages
@@ -168,15 +166,32 @@ def _run_ocr(arquivo) -> str:
     return ""
 
 
-@transaction.atomic
 def process_uploaded_file(arquivo):
     """Processa um arquivo recém-enviado: checksum, mime, thumbnail e OCR."""
+
+    def update_progress(progress, stage):
+        arquivo.processamento_status = ProcessingStatus.PROCESSING
+        arquivo.processamento_progresso = progress
+        arquivo.processamento_etapa = stage
+        arquivo.save(
+            update_fields=["processamento_status", "processamento_progresso", "processamento_etapa"]
+        )
+
+    update_progress(10, "detectando formato")
     FileService.detect_mime_type(arquivo)
+    update_progress(30, "calculando checksum")
     FileService.calculate_checksum(arquivo)
+    update_progress(55, "gerando miniatura")
     if arquivo.mime_type and arquivo.mime_type.startswith("image/"):
         FileService.generate_thumbnail(arquivo)
+    update_progress(70, "executando OCR")
     texto_ocr = _run_ocr(arquivo)
     if texto_ocr:
         arquivo.conteudo_ocr = texto_ocr
+    arquivo.processado_ocr = True
+    arquivo.processamento_status = ProcessingStatus.COMPLETED
+    arquivo.processamento_etapa = "concluído"
+    arquivo.processamento_progresso = 100
+    arquivo.processamento_erro = ""
     arquivo.save()
     return arquivo

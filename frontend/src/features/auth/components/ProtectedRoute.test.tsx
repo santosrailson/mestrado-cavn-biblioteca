@@ -19,12 +19,12 @@ const makeUser = (perfil: Usuario['perfil']): Usuario => ({
   updatedAt: '',
 });
 
-function renderWithRouter(
-  element: React.ReactNode,
-  initialPath = '/admin'
-) {
+function renderWithRouter(element: React.ReactNode, initialPath = '/admin') {
   return render(
-    <MemoryRouter initialEntries={[initialPath]}>
+    <MemoryRouter
+      initialEntries={[initialPath]}
+      future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+    >
       <Routes>
         <Route path="/admin" element={element} />
         <Route path="/login" element={<div>Página de Login</div>} />
@@ -42,7 +42,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
   it('CatalogerRoute redireciona para /login quando não autenticado', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null });
     renderWithRouter(
-      <CatalogerRoute><div>Conteúdo</div></CatalogerRoute>
+      <CatalogerRoute>
+        <div>Conteúdo</div>
+      </CatalogerRoute>
     );
     expect(screen.getByText('Página de Login')).toBeInTheDocument();
     expect(screen.queryByText('Conteúdo')).not.toBeInTheDocument();
@@ -51,7 +53,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
   it('CuratorRoute redireciona para /login quando não autenticado', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null });
     renderWithRouter(
-      <CuratorRoute><div>Conteúdo</div></CuratorRoute>
+      <CuratorRoute>
+        <div>Conteúdo</div>
+      </CuratorRoute>
     );
     expect(screen.getByText('Página de Login')).toBeInTheDocument();
   });
@@ -59,7 +63,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
   it('AdminRoute redireciona para /login quando não autenticado', () => {
     mockUseAuth.mockReturnValue({ isAuthenticated: false, user: null });
     renderWithRouter(
-      <AdminRoute><div>Conteúdo</div></AdminRoute>
+      <AdminRoute>
+        <div>Conteúdo</div>
+      </AdminRoute>
     );
     expect(screen.getByText('Página de Login')).toBeInTheDocument();
   });
@@ -70,7 +76,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
       user: makeUser('catalogador'),
     });
     renderWithRouter(
-      <AdminRoute><div>Conteúdo Admin</div></AdminRoute>
+      <AdminRoute>
+        <div>Conteúdo Admin</div>
+      </AdminRoute>
     );
     expect(screen.getByText('Acesso Negado')).toBeInTheDocument();
     expect(screen.queryByText('Conteúdo Admin')).not.toBeInTheDocument();
@@ -82,7 +90,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
       user: makeUser('catalogador'),
     });
     renderWithRouter(
-      <CatalogerRoute><div>Painel</div></CatalogerRoute>
+      <CatalogerRoute>
+        <div>Painel</div>
+      </CatalogerRoute>
     );
     expect(screen.getByText('Painel')).toBeInTheDocument();
   });
@@ -93,7 +103,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
       user: makeUser('administrador'),
     });
     renderWithRouter(
-      <AdminRoute><div>Área Admin</div></AdminRoute>
+      <AdminRoute>
+        <div>Área Admin</div>
+      </AdminRoute>
     );
     expect(screen.getByText('Área Admin')).toBeInTheDocument();
   });
@@ -104,7 +116,9 @@ describe('ProtectedRoute — redirecionamento por autenticação', () => {
       user: makeUser('catalogador'),
     });
     renderWithRouter(
-      <CuratorRoute><div>Curadoria</div></CuratorRoute>
+      <CuratorRoute>
+        <div>Curadoria</div>
+      </CuratorRoute>
     );
     expect(screen.getByText('Acesso Negado')).toBeInTheDocument();
   });

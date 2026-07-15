@@ -55,7 +55,7 @@ Sistema web completo para preservação, organização e disseminação do acerv
 ## Requisitos
 
 - Python 3.9+
-- Node.js 20+
+- Node.js 22.18+
 - PostgreSQL 15+ **ou** SQLite para desenvolvimento local
 - Redis 7+ (opcional em dev)
 - Docker + Docker Compose (opcional, recomendado)
@@ -110,7 +110,7 @@ Recomenda-se agendamento via cron:
 0 2 * * * cd /opt/cavn-digital && bash scripts/backup.sh >> /var/log/cavn-backup.log 2>&1
 ```
 
-> **Importante:** sincronize os arquivos de `/opt/cavn-digital-backups` para um storage externo (S3, Backblaze B2, etc.) para garantir recuperação em desastres.
+> **Importante:** configure `RCLONE_REMOTE` e `RCLONE_CONFIG` para sincronizar os backups cifrados com um storage externo (S3, Backblaze B2, SFTP etc.). Se `BACKUP_OFFSITE_REQUIRED=true`, o deploy falha quando esse destino não estiver disponível.
 
 ### Restore de backup
 

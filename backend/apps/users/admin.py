@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
-from apps.users.models import User
+from apps.users.models import PrivacyRequest, User
 
 
 class UserAdmin(ModelAdmin, BaseUserAdmin):
@@ -63,3 +63,20 @@ class UserAdmin(ModelAdmin, BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
+
+
+@admin.register(PrivacyRequest)
+class PrivacyRequestAdmin(ModelAdmin):
+    """Administra solicitações LGPD sem permitir apagá-las."""
+
+    list_display = ["tipo", "usuario", "status", "criado_em", "resolvido_em"]
+    list_filter = ["tipo", "status", "criado_em"]
+    search_fields = ["usuario__email", "usuario__first_name", "usuario__last_name", "descricao"]
+    readonly_fields = ["id", "usuario", "tipo", "descricao", "criado_em", "atualizado_em"]
+    fields = readonly_fields + ["status", "resposta", "resolvido_em", "resolvido_por"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

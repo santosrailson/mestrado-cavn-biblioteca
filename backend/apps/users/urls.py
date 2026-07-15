@@ -23,14 +23,31 @@ urlpatterns = [
     ),
     path("logout/", views.logout_view, name="logout"),
     path("me/", views.me_view, name="me"),
+    path("privacy/export/", views.privacy_export_view, name="privacy_export"),
+    path(
+        "privacy/requests/", views.PrivacyRequestListCreateView.as_view(), name="privacy_requests"
+    ),
+    path(
+        "privacy/requests/<uuid:pk>/",
+        views.PrivacyRequestDetailView.as_view(),
+        name="privacy_request_detail",
+    ),
     path("cadastro/", views.UserCreateView.as_view(), name="user_create"),
     # Senhas
     path("alterar-senha/", views.alterar_propria_senha, name="alterar_senha"),
     path("solicitar-senha/", views.solicitar_alteracao_senha, name="solicitar_senha"),
     path("status-senha/", views.status_solicitacao_senha, name="status_senha"),
     path("solicitacoes-senha/", views.listar_solicitacoes_senha, name="listar_solicitacoes_senha"),
-    path("solicitacoes-senha/<int:pk>/aprovar/", views.aprovar_solicitacao_senha, name="aprovar_senha"),
-    path("solicitacoes-senha/<int:pk>/rejeitar/", views.rejeitar_solicitacao_senha, name="rejeitar_senha"),
+    path(
+        "solicitacoes-senha/<int:pk>/aprovar/",
+        views.aprovar_solicitacao_senha,
+        name="aprovar_senha",
+    ),
+    path(
+        "solicitacoes-senha/<int:pk>/rejeitar/",
+        views.rejeitar_solicitacao_senha,
+        name="rejeitar_senha",
+    ),
     # 2FA
     path("2fa/status/", twofactor.twofactor_status, name="twofactor_status"),
     path("2fa/setup/", twofactor.twofactor_setup, name="twofactor_setup"),

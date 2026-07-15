@@ -1,11 +1,15 @@
 import type { Metric } from 'web-vitals';
 import api from './api';
+import { hasAnalyticsConsent } from './analyticsConsent';
 
 const VITALS_ENDPOINT = '/analytics/vitals/';
 const VITALS_SAMPLE_RATE = Number(import.meta.env.VITE_WEB_VITALS_SAMPLE_RATE ?? '0.1');
 
 function shouldReportVitals() {
-  return Number.isFinite(VITALS_SAMPLE_RATE) && Math.random() < Math.max(0, Math.min(1, VITALS_SAMPLE_RATE));
+  return (
+    Number.isFinite(VITALS_SAMPLE_RATE) &&
+    Math.random() < Math.max(0, Math.min(1, VITALS_SAMPLE_RATE))
+  );
 }
 
 function sendToBackend(metric: Metric) {
@@ -33,7 +37,7 @@ function sendToBackend(metric: Metric) {
 }
 
 export async function reportWebVitals() {
-  if (!shouldReportVitals()) return;
+  if (!hasAnalyticsConsent() || !shouldReportVitals()) return;
 
   const { onCLS, onFCP, onLCP, onTTFB, onINP } = await import('web-vitals');
   onCLS(sendToBackend);

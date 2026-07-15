@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.18.0",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -42,6 +46,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
+    "axe-core": "^4.12.1",
     "@playwright/test": "^1.61.1",
     "@testing-library/jest-dom": "^6.4.5",
     "@testing-library/react": "^15.0.7",

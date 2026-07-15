@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit.models import Auditoria
+from apps.core.models import AnalyticsEvent
 from apps.documents.models import Document
 from apps.users.models import User
 from apps.users.permissions import IsCataloguer
@@ -38,10 +39,12 @@ def _monthly_audit_counts(hoje):
         dt = hoje - timedelta(days=30 * i)
         # Normaliza para o primeiro dia do mês para coincidir com TruncMonth
         chave = dt.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        result.append({
-            "mes": calendar.month_abbr[dt.month].capitalize(),
-            "acessos": por_mes.get(chave, 0),
-        })
+        result.append(
+            {
+                "mes": calendar.month_abbr[dt.month].capitalize(),
+                "acessos": por_mes.get(chave, 0),
+            }
+        )
     return result
 
 
@@ -68,7 +71,11 @@ class HealthCheckView(APIView):
 
         saudavel = all(v == "ok" for v in checks.values())
         return Response(
-            {"status": "ok" if saudavel else "erro", "service": "cavn-digital-backend", "checks": checks},
+            {
+                "status": "ok" if saudavel else "erro",
+                "service": "cavn-digital-backend",
+                "checks": checks,
+            },
             status=status.HTTP_200_OK if saudavel else status.HTTP_503_SERVICE_UNAVAILABLE,
         )
 
@@ -85,9 +92,7 @@ class DashboardView(APIView):
 
         docs = Document.objects.filter(deleted_at__isnull=True)
         por_status = dict(
-            docs.values("status")
-            .annotate(count=Count("id"))
-            .values_list("status", "count")
+            docs.values("status").annotate(count=Count("id")).values_list("status", "count")
         )
 
         documentos_por_tipo = list(
@@ -98,9 +103,9 @@ class DashboardView(APIView):
             .order_by("-quantidade")
         )
 
-        atividades_recentes = Auditoria.objects.select_related("usuario").order_by(
-            "-created_at"
-        )[:6]
+        atividades_recentes = Auditoria.objects.select_related("usuario").order_by("-created_at")[
+            :6
+        ]
 
         return {
             "totalDocumentos": docs.count(),
@@ -117,9 +122,7 @@ class DashboardView(APIView):
                 {
                     "id": a.id,
                     "usuarioId": a.usuario_id,
-                    "usuario": {
-                        "nome": a.usuario.get_full_name() or a.usuario.email
-                    }
+                    "usuario": {"nome": a.usuario.get_full_name() or a.usuario.email}
                     if a.usuario
                     else None,
                     "acao": a.acao,
@@ -167,4 +170,79 @@ class WebVitalsView(APIView):
                 "navigationType": request.data.get("navigationType"),
             },
         )
+        AnalyticsEvent.objects.create(
+            name="web_vital",
+            properties={
+                "metric": metric_name,
+                "value": request.data.get("value"),
+                "rating": request.data.get("rating"),
+            },
+            path=str(request.data.get("path", ""))[:255],
+        )
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AnalyticsEventView(APIView):
+    """Recebe eventos agregados de jornada sem armazenar conteúdo sensível."""
+
+    authentication_classes = []
+    permission_classes = []
+    _ALLOWED_EVENTS = {
+        "search_submitted",
+        "search_completed",
+        "search_no_results",
+        "search_filters_cleared",
+        "document_opened",
+        "document_shared",
+        "document_downloaded",
+        "upload_started",
+        "upload_completed",
+        "upload_failed",
+        "draft_restored",
+        "draft_expired",
+        "document_processing_failed",
+    }
+
+    def post(self, request):
+        event_name = request.data.get("name", "")
+        if event_name not in self._ALLOWED_EVENTS:
+            return Response({"detail": "Evento inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        properties = request.data.get("properties", {})
+        if not isinstance(properties, dict):
+            properties = {}
+        safe_properties = {
+            str(key)[:64]: value
+            for key, value in properties.items()
+            if isinstance(value, str | int | float | bool) or value is None
+        }
+        AnalyticsEvent.objects.create(
+            name=event_name,
+            properties=safe_properties,
+            path=str(request.data.get("path", ""))[:255],
+        )
+        logger.info(
+            "ux_event",
+            extra={
+                "event": event_name,
+                "properties": properties,
+                "path": request.data.get("path", ""),
+            },
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class AnalyticsSummaryView(APIView):
+    """Resumo agregado para medir sucesso, abandono e desempenho de jornadas."""
+
+    permission_classes = [IsCataloguer]
+
+    def get(self, request):
+        days = min(max(int(request.query_params.get("days", 30)), 1), 365)
+        since = timezone.now() - timedelta(days=days)
+        rows = (
+            AnalyticsEvent.objects.filter(created_at__gte=since)
+            .values("name")
+            .annotate(total=Count("id"))
+            .order_by("name")
+        )
+        return Response({"days": days, "events": list(rows)})

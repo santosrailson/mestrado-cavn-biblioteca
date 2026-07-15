@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const externalBaseUrl = process.env.E2E_BASE_URL;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -11,7 +13,7 @@ export default defineConfig({
     ['list'],
   ],
   use: {
-    baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+    baseURL: externalBaseUrl || 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -21,11 +23,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: process.env.CI
+  webServer: externalBaseUrl
     ? undefined
     : {
-        command: 'VITE_API_URL=/api/v1 npm run dev',
-        url: 'http://localhost:5173',
+        command: 'VITE_API_URL=/api/v1 npm run dev -- --host 127.0.0.1',
+        url: 'http://127.0.0.1:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 30000,
       },

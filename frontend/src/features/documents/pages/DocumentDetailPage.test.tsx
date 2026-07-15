@@ -13,7 +13,11 @@ vi.mock('@/shared/hooks/useDocuments', () => ({
     error: new Error('not found'),
     refetch: vi.fn(),
   })),
-  useLatestDocuments: () => ({ data: { dados: [], total: 0, totalPaginas: 1 }, isLoading: false, error: null }),
+  useLatestDocuments: () => ({
+    data: { dados: [], total: 0, totalPaginas: 1 },
+    isLoading: false,
+    error: null,
+  }),
 }));
 
 vi.mock('@/shared/hooks/useScrollToTop', () => ({
@@ -46,15 +50,17 @@ const mockDocument = {
   capa: null,
 };
 
-const makeClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const makeClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 function renderPage(slug = 'ata-reuniao-2024') {
   return render(
     <HelmetProvider>
       <QueryClientProvider client={makeClient()}>
         <ToastProvider>
-          <MemoryRouter initialEntries={[`/documentos/${slug}`]}>
+          <MemoryRouter
+            initialEntries={[`/documentos/${slug}`]}
+            future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+          >
             <Routes>
               <Route path="/documentos/:slug" element={<DocumentDetailPage />} />
             </Routes>

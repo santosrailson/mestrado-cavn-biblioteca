@@ -19,50 +19,50 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { clsx } from 'clsx';
 
-const adminNavItems = [
+const adminNavItems = (t: ReturnType<typeof useLocale>['t']) => [
   {
     to: '/admin',
-    label: ptBR.admin.dashboard,
+    label: t.admin.dashboard,
     icon: LayoutDashboard,
     roles: ['catalogador', 'curador', 'administrador'],
   },
   {
     to: '/admin/documentos',
-    label: ptBR.admin.documents,
+    label: t.admin.documents,
     icon: FileText,
     roles: ['catalogador', 'curador', 'administrador'],
   },
   {
     to: '/admin/categorias',
-    label: ptBR.admin.categories,
+    label: t.admin.categories,
     icon: Tags,
     roles: ['curador', 'administrador'],
   },
   {
     to: '/admin/linha-do-tempo',
-    label: ptBR.admin.timeline,
+    label: t.admin.timeline,
     icon: Calendar,
     roles: ['curador', 'administrador'],
   },
-  { to: '/admin/usuarios', label: ptBR.admin.users, icon: Users, roles: ['administrador'] },
+  { to: '/admin/usuarios', label: t.admin.users, icon: Users, roles: ['administrador'] },
   {
     to: '/admin/solicitacoes-senha',
-    label: 'Solicitações de senha',
+    label: t.admin.passwordRequests,
     icon: KeyRound,
     roles: ['administrador'],
   },
   {
     to: '/admin/configuracoes',
-    label: ptBR.admin.settings,
+    label: t.admin.settings,
     icon: Settings,
     roles: ['administrador'],
   },
   {
     to: '/admin/auditoria',
-    label: ptBR.admin.audit,
+    label: t.admin.audit,
     icon: ClipboardList,
     roles: ['administrador'],
   },
@@ -71,8 +71,10 @@ const adminNavItems = [
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const mainRef = useRef<HTMLElement>(null);
+  const navItems = adminNavItems(t);
 
   const handleLogout = () => {
     logout();
@@ -85,10 +87,10 @@ export function AdminLayout() {
         type="button"
         onClick={() => setSidebarOpen(true)}
         className="flex items-center gap-2 bg-ufpb-blue p-4 text-white md:hidden"
-        aria-label="Abrir menu administrativo"
+        aria-label={t.admin.openAdminMenu}
       >
         <Menu className="h-5 w-5" aria-hidden="true" />
-        {ptBR.common.accessAdmin}
+        {t.common.accessAdmin}
       </button>
 
       <aside
@@ -96,15 +98,15 @@ export function AdminLayout() {
           'fixed inset-y-0 left-0 z-50 flex w-64 transform flex-col bg-ufpb-blue text-white transition-transform md:static md:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
-        aria-label="Menu administrativo"
+        aria-label={t.admin.adminMenu}
       >
         <div className="flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-4">
-          <span className="font-bold">{ptBR.common.siteShortName}</span>
+          <span className="font-bold">{t.common.siteShortName}</span>
           <button
             type="button"
             onClick={() => setSidebarOpen(false)}
             className="rounded p-1 hover:bg-white/10 md:hidden"
-            aria-label="Fechar menu"
+            aria-label={t.common.close}
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -149,11 +151,11 @@ export function AdminLayout() {
                 className="flex w-full items-center gap-3 rounded px-3 py-2 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white"
               >
                 <LogOut className="h-5 w-5" aria-hidden="true" />
-                {ptBR.common.logout}
+                {t.common.logout}
               </button>
             </li>
 
-            {adminNavItems
+            {navItems
               .filter(
                 (item) =>
                   user?.perfis?.some((role) => item.roles.includes(role)) ||

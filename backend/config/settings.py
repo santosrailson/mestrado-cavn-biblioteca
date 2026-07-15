@@ -547,6 +547,7 @@ if CSP_AVAILABLE:
 SENTRY_DSN = os.getenv("SENTRY_DSN", "")
 SENTRY_ENVIRONMENT = os.getenv("SENTRY_ENVIRONMENT", "production" if not DEBUG else "development")
 SENTRY_RELEASE = os.getenv("SENTRY_RELEASE", "")
+ANALYTICS_RETENTION_DAYS = int(os.getenv("ANALYTICS_RETENTION_DAYS", "180"))
 
 if SENTRY_DSN:
     import sentry_sdk

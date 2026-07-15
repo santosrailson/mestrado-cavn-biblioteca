@@ -27,15 +27,14 @@ vi.mock('@/features/admin/hooks/useEditable', () => ({
   useEditable: () => ({ canEdit: false }),
 }));
 
-const makeClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const makeClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 function renderPage() {
   return render(
     <HelmetProvider>
       <QueryClientProvider client={makeClient()}>
         <ToastProvider>
-          <MemoryRouter>
+          <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
             <HomePage />
           </MemoryRouter>
         </ToastProvider>

@@ -3,9 +3,11 @@ import { UseFormRegister, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Input } from '@/shared/components/Input';
 import { DateInput } from '@/shared/components/DateInput';
 import { DocumentFormData } from '../lib/documentSchema';
-import { tipoDocumentoOptions, dataPrecisaoOptions } from '../lib/documentFormConstants';
+import { getTipoDocumentoOptions, getDataPrecisaoOptions } from '../lib/documentFormConstants';
+import { useLocale } from '@/shared/i18n';
 import { Categoria, Autor } from '@/shared/types';
 import { X, Plus } from 'lucide-react';
+import { ProgressBar } from '@/shared/components/ProgressBar';
 
 interface DocumentFormStepsProps {
   step: number;
@@ -19,6 +21,10 @@ interface DocumentFormStepsProps {
   availableAuthors?: Autor[];
   selectedFile: File | null;
   onFileChange: (file: File | null) => void;
+  uploadProgress?: number;
+  uploadStage?: string;
+  uploadError?: string;
+  onRetryUpload?: () => void;
 }
 
 export function DocumentFormSteps({
@@ -33,8 +39,16 @@ export function DocumentFormSteps({
   availableAuthors,
   selectedFile,
   onFileChange,
+  uploadProgress,
+  uploadStage,
+  uploadError,
+  onRetryUpload,
 }: DocumentFormStepsProps) {
   const [newAuthor, setNewAuthor] = useState('');
+  const { t } = useLocale();
+  const tipoDocumentoOptions = getTipoDocumentoOptions(t);
+  const dataPrecisaoOptions = getDataPrecisaoOptions(t);
+  const formatLabel = (template: string, value: string) => template.replace('{name}', value);
 
   const addAuthor = (nome: string) => {
     const trimmed = nome.trim();
@@ -54,9 +68,13 @@ export function DocumentFormSteps({
     <>
       {step === 0 && (
         <div className="space-y-4">
-          <Input label="Título *" {...register('titulo')} error={errors.titulo?.message} />
-          <Input label="Título alternativo" {...register('tituloAlternativo')} />
-          <Input label="Código de referência" {...register('codigoReferencia')} />
+          <Input
+            label={t.admin.form.title}
+            {...register('titulo')}
+            error={errors.titulo?.message}
+          />
+          <Input label={t.admin.form.alternativeTitle} {...register('tituloAlternativo')} />
+          <Input label={t.admin.form.referenceCode} {...register('codigoReferencia')} />
         </div>
       )}
 
@@ -64,13 +82,13 @@ export function DocumentFormSteps({
         <div className="space-y-4">
           <div>
             <label htmlFor="descricao" className="label">
-              Descrição
+              {t.admin.form.description}
             </label>
             <textarea id="descricao" {...register('descricao')} className="input min-h-[120px]" />
           </div>
           <div>
             <label htmlFor="resumo" className="label">
-              Resumo
+              {t.admin.form.summary}
             </label>
             <textarea id="resumo" {...register('resumo')} className="input min-h-[80px]" />
           </div>
@@ -81,7 +99,7 @@ export function DocumentFormSteps({
         <div className="space-y-6">
           <div>
             <label htmlFor="tipoDocumento" className="label">
-              Tipo de documento *
+              {t.admin.form.documentType}
             </label>
             <select id="tipoDocumento" {...register('tipoDocumento')} className="input">
               {tipoDocumentoOptions.map((option) => (
@@ -93,7 +111,7 @@ export function DocumentFormSteps({
           </div>
 
           <div>
-            <span className="label">Categorias *</span>
+            <span className="label">{t.admin.form.categoriesRequired}</span>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {categories?.map((cat) => (
                 <label
@@ -115,7 +133,7 @@ export function DocumentFormSteps({
           </div>
 
           <div>
-            <span className="label">Autores</span>
+            <span className="label">{t.admin.form.authors}</span>
             <div className="mb-3 flex flex-wrap gap-2">
               {autores.map((autor) => (
                 <span
@@ -136,7 +154,9 @@ export function DocumentFormSteps({
 
             {availableAuthors && availableAuthors.length > 0 && (
               <div className="mb-3">
-                <span className="text-sm text-[var(--color-text-muted)]">Autores existentes</span>
+                <span className="text-sm text-[var(--color-text-muted)]">
+                  {t.admin.form.existingAuthors}
+                </span>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {availableAuthors.map((autor) => (
                     <button
@@ -155,7 +175,7 @@ export function DocumentFormSteps({
 
             <div className="flex gap-2">
               <Input
-                placeholder="Novo autor"
+                placeholder={t.admin.form.newAuthor}
                 value={newAuthor}
                 onChange={(e) => setNewAuthor(e.target.value)}
                 onKeyDown={(e) => {
@@ -175,7 +195,7 @@ export function DocumentFormSteps({
                 className="btn-outline flex items-center gap-1"
               >
                 <Plus className="h-4 w-4" />
-                Adicionar
+                {t.admin.form.addAuthor}
               </button>
             </div>
           </div>
@@ -184,10 +204,10 @@ export function DocumentFormSteps({
 
       {step === 3 && (
         <div className="space-y-4">
-          <DateInput label="Data do documento" {...register('dataDocumento')} />
+          <DateInput label={t.admin.form.documentDate} {...register('dataDocumento')} />
           <div>
             <label htmlFor="dataPrecisao" className="label">
-              Precisão da data
+              {t.admin.form.datePrecision}
             </label>
             <select id="dataPrecisao" {...register('dataPrecisao')} className="input">
               {dataPrecisaoOptions.map((option) => (
@@ -197,9 +217,9 @@ export function DocumentFormSteps({
               ))}
             </select>
           </div>
-          <Input label="Cobertura temporal" {...register('coberturaTemporal')} />
-          <Input label="Cobertura espacial" {...register('coberturaEspacial')} />
-          <Input label="Idioma" {...register('idioma')} />
+          <Input label={t.admin.form.temporalCoverage} {...register('coberturaTemporal')} />
+          <Input label={t.admin.form.spatialCoverage} {...register('coberturaEspacial')} />
+          <Input label={t.admin.form.language} {...register('idioma')} />
         </div>
       )}
 
@@ -207,24 +227,59 @@ export function DocumentFormSteps({
         <div className="space-y-4">
           <div>
             <label htmlFor="arquivo" className="label">
-              Arquivo digital
+              {t.admin.form.digitalFile}
             </label>
             <input
               id="arquivo"
               type="file"
               onChange={(e) => onFileChange(e.target.files?.[0] || null)}
               className="input"
+              aria-describedby="arquivo-help"
             />
-            {selectedFile && <p className="mt-1 text-sm text-text-muted">{selectedFile.name}</p>}
+            <p id="arquivo-help" className="field-help">
+              {t.admin.form.fileHelp}
+            </p>
+            {selectedFile && (
+              <p className="mt-1 text-sm text-text-muted">
+                {formatLabel(t.admin.form.selectedFile, selectedFile.name)}
+              </p>
+            )}
+            {uploadStage && (
+              <div className="mt-4 rounded-lg border border-border bg-surface p-3">
+                <ProgressBar
+                  label={uploadStage}
+                  value={uploadProgress}
+                  indeterminate={uploadProgress === undefined}
+                  detail={uploadProgress === 100 ? t.admin.form.processingDetail : undefined}
+                />
+              </div>
+            )}
+            {uploadError && (
+              <div
+                className="mt-3 rounded-lg border border-danger-border bg-danger-bg p-3"
+                role="alert"
+              >
+                <p className="text-sm font-medium text-danger-text">{uploadError}</p>
+                {onRetryUpload && (
+                  <button
+                    type="button"
+                    className="btn-outline mt-2 text-sm"
+                    onClick={onRetryUpload}
+                  >
+                    {t.admin.form.retryUpload}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
 
       {step === 5 && (
         <div className="space-y-4">
-          <Input label="Direitos" {...register('direitos')} />
-          <Input label="Fonte" {...register('fonte')} />
-          <Input label="Relação" {...register('relacao')} />
+          <Input label={t.admin.form.rights} {...register('direitos')} />
+          <Input label={t.admin.form.source} {...register('fonte')} />
+          <Input label={t.admin.form.relation} {...register('relacao')} />
         </div>
       )}
     </>

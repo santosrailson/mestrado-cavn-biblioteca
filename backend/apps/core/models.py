@@ -34,3 +34,20 @@ class SlugModel(BaseModel):
 
     class Meta:
         abstract = True
+
+
+class AnalyticsEvent(models.Model):
+    """Evento anônimo de produto, sujeito à política de retenção configurada."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=64)
+    properties = models.JSONField(default=dict, blank=True)
+    path = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["name", "created_at"], name="analytics_name_created_idx"),
+            models.Index(fields=["created_at"], name="analytics_created_idx"),
+        ]

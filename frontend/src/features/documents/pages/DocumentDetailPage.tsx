@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Download,
   Share2,
@@ -30,9 +30,12 @@ import adminApi from '@/features/admin/api/adminApi';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { lazy, Suspense } from 'react';
 import { Loading } from '@/shared/components/Loading';
+import { ProgressBar } from '@/shared/components/ProgressBar';
 
 const DocumentFormModal = lazy(() =>
-  import('@/features/admin/components/DocumentFormModal').then((m) => ({ default: m.DocumentFormModal }))
+  import('@/features/admin/components/DocumentFormModal').then((m) => ({
+    default: m.DocumentFormModal,
+  }))
 );
 const PdfViewer = lazy(() =>
   import('@/features/documents/components/PdfViewer').then((m) => ({ default: m.PdfViewer }))
@@ -40,6 +43,7 @@ const PdfViewer = lazy(() =>
 import { useToast } from '@/shared/hooks/useToast';
 import ptBR from '@/shared/i18n/pt-BR';
 import { Arquivo, Documento } from '@/shared/types';
+import { trackEvent } from '@/shared/lib/analytics';
 
 function formatBytes(bytes?: number) {
   if (!bytes) return '-';
@@ -63,6 +67,12 @@ export function DocumentDetailPage() {
   const { canEdit } = useEditable();
   const { toast } = useToast();
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (documento) {
+      trackEvent('document_opened', { document_type: documento.tipoDocumento });
+    }
+  }, [documento]);
 
   if (isLoading) return <DocumentDetailSkeleton />;
   if (error || !documento) {
@@ -100,8 +110,10 @@ export function DocumentDetailPage() {
           text: documento.resumo,
           url,
         });
+        trackEvent('document_shared', { document_type: documento.tipoDocumento });
       } else {
         await navigator.clipboard.writeText(url);
+        trackEvent('document_shared', { document_type: documento.tipoDocumento });
         toast('Link copiado para a área de transferência.', 'success');
       }
     } catch {
@@ -150,6 +162,37 @@ export function DocumentDetailPage() {
               <Card className="overflow-hidden p-0">
                 {mainFile ? (
                   <div className="relative min-h-[300px] bg-surface-alt">
+                    {mainFile.processamentoStatus &&
+                      mainFile.processamentoStatus !== 'concluido' && (
+                        <div className="border-b border-border bg-bg p-4">
+                          <ProgressBar
+                            label={
+                              mainFile.processamentoStatus === 'falhou'
+                                ? 'Falha no processamento'
+                                : 'Processando arquivo'
+                            }
+                            value={mainFile.processamentoProgresso}
+                            detail={
+                              mainFile.processamentoStatus === 'falhou'
+                                ? mainFile.processamentoErro || 'Tente enviar o arquivo novamente.'
+                                : mainFile.processamentoEtapa
+                            }
+                            indeterminate={
+                              mainFile.processamentoStatus === 'processando' &&
+                              !mainFile.processamentoProgresso
+                            }
+                          />
+                          {mainFile.processamentoStatus === 'falhou' && (
+                            <button
+                              type="button"
+                              className="btn-outline mt-3 text-sm"
+                              onClick={() => refetch()}
+                            >
+                              Atualizar status e tentar novamente
+                            </button>
+                          )}
+                        </div>
+                      )}
                     {isPdf ? (
                       <>
                         <Suspense fallback={<Skeleton className="h-[60vh] w-full" />}>
@@ -159,19 +202,26 @@ export function DocumentDetailPage() {
                           />
                         </Suspense>
                         <p id="pdf-instructions" className="sr-only">
-                          Documento PDF abaixo. Use as teclas de navegação do leitor de PDF do navegador.
+                          Documento PDF abaixo. Use as teclas de navegação do leitor de PDF do
+                          navegador.
                         </p>
                       </>
                     ) : isImage ? (
-                      <img
-                        src={getViewerUrl(mainFile)}
-                        alt={`Imagem do documento ${documento.titulo}`}
-                        className="mx-auto h-auto max-h-[60vh] w-auto object-contain"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = LOGO_FALLBACK;
-                          (e.currentTarget as HTMLImageElement).className = 'mx-auto h-40 w-auto object-contain opacity-60';
-                        }}
-                      />
+                      <figure className="p-3">
+                        <img
+                          src={getViewerUrl(mainFile)}
+                          alt={`Imagem do documento ${documento.titulo}`}
+                          className="mx-auto h-auto max-h-[60vh] w-auto object-contain"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = LOGO_FALLBACK;
+                            (e.currentTarget as HTMLImageElement).className =
+                              'mx-auto h-40 w-auto object-contain opacity-60';
+                          }}
+                        />
+                        <figcaption className="mt-2 text-center text-sm text-text-muted">
+                          {documento.titulo}
+                        </figcaption>
+                      </figure>
                     ) : (
                       <div className="flex h-[300px] flex-col items-center justify-center gap-2 text-text-muted">
                         <FileText className="h-12 w-12" aria-hidden="true" />
@@ -288,6 +338,9 @@ export function DocumentDetailPage() {
                       href={getViewerUrl(mainFile)}
                       download
                       className="btn-primary w-full no-underline"
+                      onClick={() =>
+                        trackEvent('document_downloaded', { mime_type: mainFile.mimeType })
+                      }
                     >
                       <Download className="h-4 w-4" aria-hidden="true" />
                       {ptBR.document.downloadOriginal}
@@ -297,11 +350,7 @@ export function DocumentDetailPage() {
                     <Share2 className="h-4 w-4" aria-hidden="true" />
                     {ptBR.document.share}
                   </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full"
-                    onClick={handleCopyLink}
-                  >
+                  <Button variant="ghost" className="w-full" onClick={handleCopyLink}>
                     <LinkIcon className="h-4 w-4" aria-hidden="true" />
                     {ptBR.document.permalink}
                   </Button>
@@ -383,22 +432,34 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
 
   const submitMutation = useMutation({
     mutationFn: () => adminApi.submitDocument(documento.slug),
-    onSuccess: () => { invalidate(); toast('Documento enviado para revisão.', 'success'); },
+    onSuccess: () => {
+      invalidate();
+      toast('Documento enviado para revisão.', 'success');
+    },
     onError: () => toast('Erro ao submeter documento.', 'error'),
   });
   const approveMutation = useMutation({
     mutationFn: () => adminApi.approveDocument(documento.slug),
-    onSuccess: () => { invalidate(); toast('Documento aprovado.', 'success'); },
+    onSuccess: () => {
+      invalidate();
+      toast('Documento aprovado.', 'success');
+    },
     onError: () => toast('Erro ao aprovar documento.', 'error'),
   });
   const publishMutation = useMutation({
     mutationFn: () => adminApi.publishDocument(documento.slug),
-    onSuccess: () => { invalidate(); toast('Documento publicado com sucesso.', 'success'); },
+    onSuccess: () => {
+      invalidate();
+      toast('Documento publicado com sucesso.', 'success');
+    },
     onError: () => toast('Erro ao publicar documento.', 'error'),
   });
   const archiveMutation = useMutation({
     mutationFn: () => adminApi.archiveDocument(documento.slug),
-    onSuccess: () => { invalidate(); toast('Documento arquivado.', 'success'); },
+    onSuccess: () => {
+      invalidate();
+      toast('Documento arquivado.', 'success');
+    },
     onError: () => toast('Erro ao arquivar documento.', 'error'),
   });
 

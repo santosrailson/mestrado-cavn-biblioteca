@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastProvider } from '@/shared/components/ToastProvider';
+import { LocaleProvider } from '@/shared/i18n';
 import { SearchPage } from './SearchPage';
 
 vi.mock('@/shared/hooks/useSearch', () => ({
@@ -20,21 +21,25 @@ vi.mock('@/features/admin/hooks/useEditable', () => ({
 
 import { useSearch } from '@/shared/hooks/useSearch';
 
-const makeClient = () =>
-  new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const makeClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 function renderPage(search = '') {
   return render(
     <HelmetProvider>
-      <QueryClientProvider client={makeClient()}>
-        <ToastProvider>
-          <MemoryRouter initialEntries={[`/busca${search}`]}>
-            <Routes>
-              <Route path="/busca" element={<SearchPage />} />
-            </Routes>
-          </MemoryRouter>
-        </ToastProvider>
-      </QueryClientProvider>
+      <LocaleProvider>
+        <QueryClientProvider client={makeClient()}>
+          <ToastProvider>
+            <MemoryRouter
+              initialEntries={[`/busca${search}`]}
+              future={{ v7_relativeSplatPath: true, v7_startTransition: true }}
+            >
+              <Routes>
+                <Route path="/busca" element={<SearchPage />} />
+              </Routes>
+            </MemoryRouter>
+          </ToastProvider>
+        </QueryClientProvider>
+      </LocaleProvider>
     </HelmetProvider>
   );
 }

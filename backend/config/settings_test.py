@@ -16,6 +16,7 @@ os.environ["ALLOWED_HOSTS"] = "*"
 from .settings import *  # noqa: F401,F403
 
 DEBUG = True
+TESTING = True
 ALLOWED_HOSTS = ["*"]
 SECURE_SSL_REDIRECT = False
 SECURE_HSTS_SECONDS = 0
@@ -35,3 +36,29 @@ EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
 # Isola uploads de teste do volume persistente da aplicação.
 MEDIA_ROOT = tempfile.mkdtemp(prefix="cavn-test-media-")
+
+# O ambiente gerenciado pode deixar o arquivo de log de desenvolvimento
+# pertencente a outro usuário. Testes não precisam gravar logs em disco.
+LOGGING_CONFIG = None
+
+# Testes unitários não dependem de um daemon Redis externo; o CI de integração
+# continua cobrindo Redis através do serviço configurado no workflow.
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "cavn-digital-test-cache",
+    },
+    "axes": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "cavn-digital-test-axes",
+    },
+}
+
+# O ambiente de testes usa cache local para não depender de Redis. Os checks
+# de produção do django-ratelimit/axes exigem cache compartilhado e não se
+# aplicam a esta configuração isolada.
+SILENCED_SYSTEM_CHECKS = [
+    "django_ratelimit.E003",
+    "django_ratelimit.W001",
+    "axes.W001",
+]

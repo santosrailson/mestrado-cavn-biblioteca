@@ -6,7 +6,9 @@ from axes.helpers import (
     get_client_user_agent,
 )
 from django.conf import settings
+from django.http import JsonResponse
 from django.middleware.csrf import get_token
+from django.utils import timezone
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -15,18 +17,19 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from apps.audit.services import AuditoriaService
-from apps.users.models import User
+from apps.documents.models import Document
+from apps.users.models import PrivacyRequest, User
 from apps.users.permissions import IsAdministrator, IsOwnerOrAdministrator
 from apps.users.ratelimit import RateLimitedMixin, drf_ratelimit
 from apps.users.serializers import (
+    PrivacyRequestSerializer,
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
 )
 
 _COOKIE_SECURE = getattr(settings, "SESSION_COOKIE_SECURE", False)
-_AXES_ENABLED = "axes" in settings.INSTALLED_APPS
-
+_AXES_ENABLED = "axes" in settings.INSTALLED_APPS and not getattr(settings, "TESTING", False)
 
 
 def _set_auth_cookies(response, access_token, refresh_token=None):
@@ -134,8 +137,11 @@ class CustomTokenObtainPairView(RateLimitedMixin, TokenObtainPairView):
             if user:
                 response.data["usuario"] = UserSerializer(user).data
                 AuditoriaService.registrar(
-                    usuario=user, acao="login", entidade="User",
-                    entidade_id=str(user.pk), request=request,
+                    usuario=user,
+                    acao="login",
+                    entidade="User",
+                    entidade_id=str(user.pk),
+                    request=request,
                 )
         return response
 
@@ -188,8 +194,11 @@ def logout_view(request):
 
     if request.user and request.user.is_authenticated:
         AuditoriaService.registrar(
-            usuario=request.user, acao="logout", entidade="User",
-            entidade_id=str(request.user.pk), request=request,
+            usuario=request.user,
+            acao="logout",
+            entidade="User",
+            entidade_id=str(request.user.pk),
+            request=request,
         )
 
     response = Response({"sucesso": True, "mensagem": "Logout realizado com sucesso."})
@@ -246,6 +255,118 @@ def me_view(request):
     return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
 
 
+class PrivacyRequestListCreateView(generics.ListCreateAPIView):
+    """Lista as solicitações do titular e recebe novas solicitações de direito."""
+
+    serializer_class = PrivacyRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = PrivacyRequest.objects.select_related("usuario")
+        if self.request.user.is_administrator:
+            return queryset
+        return queryset.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        request = serializer.save(usuario=self.request.user)
+        AuditoriaService.registrar(
+            usuario=self.request.user,
+            acao="criar",
+            entidade="PrivacyRequest",
+            entidade_id=request.pk,
+            dados_novos={"tipo": request.tipo},
+            request=self.request,
+        )
+
+
+class PrivacyRequestDetailView(generics.RetrieveUpdateAPIView):
+    """Permite ao titular consultar e ao administrador resolver a solicitação."""
+
+    serializer_class = PrivacyRequestSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = PrivacyRequest.objects.select_related("usuario")
+    http_method_names = ["get", "patch", "head", "options"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.is_administrator:
+            return queryset
+        return queryset.filter(usuario=self.request.user)
+
+    def partial_update(self, request, *args, **kwargs):
+        if not request.user.is_administrator:
+            return Response(
+                {"detail": "Apenas administradores podem atualizar uma solicitação."}, status=403
+            )
+        instance = self.get_object()
+        allowed = {key: request.data[key] for key in ("status", "resposta") if key in request.data}
+        if not allowed:
+            return Response({"detail": "Informe status ou resposta."}, status=400)
+        if "status" in allowed and allowed["status"] not in PrivacyRequest.Status.values:
+            return Response({"detail": "Status de solicitação inválido."}, status=400)
+        if "status" in allowed:
+            instance.status = allowed["status"]
+        if "resposta" in allowed:
+            instance.resposta = str(allowed["resposta"])[:4000]
+        if instance.status in {PrivacyRequest.Status.COMPLETED, PrivacyRequest.Status.REJECTED}:
+            instance.resolvido_por = request.user
+            instance.resolvido_em = timezone.now()
+        else:
+            instance.resolvido_por = None
+            instance.resolvido_em = None
+        instance.save(
+            update_fields=["status", "resposta", "resolvido_por", "resolvido_em", "atualizado_em"]
+        )
+        AuditoriaService.registrar(
+            usuario=request.user,
+            acao="atualizar",
+            entidade="PrivacyRequest",
+            entidade_id=instance.pk,
+            dados_novos=allowed,
+            request=request,
+        )
+        return Response(self.get_serializer(instance).data)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def privacy_export_view(request):
+    """Entrega uma cópia JSON dos dados da conta sob solicitação do titular."""
+
+    user = request.user
+    documents = list(
+        Document.objects.filter(created_by=user, deleted_at__isnull=True).values(
+            "id", "titulo", "slug", "tipo_documento", "created_at", "updated_at"
+        )
+    )
+    payload = {
+        "exported_at": timezone.now().isoformat(),
+        "purpose": "Exercício do direito de acesso do titular.",
+        "profile": {
+            "id": str(user.pk),
+            "email": user.email,
+            "username": user.username,
+            "name": user.get_full_name(),
+            "role": user.role,
+            "institution": user.institution,
+            "bio": user.bio,
+            "created_at": user.date_joined.isoformat() if user.date_joined else None,
+        },
+        "documents_created_by_account": documents,
+        "privacy_requests": list(
+            PrivacyRequest.objects.filter(usuario=user).values(
+                "id", "tipo", "descricao", "status", "resposta", "criado_em", "atualizado_em"
+            )
+        ),
+    }
+    AuditoriaService.registrar(
+        usuario=user, acao="criar", entidade="PrivacyExport", entidade_id=user.pk, request=request
+    )
+    response = JsonResponse(payload, json_dumps_params={"ensure_ascii": False})
+    response["Content-Disposition"] = 'attachment; filename="cavn-dados-pessoais.json"'
+    return response
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @drf_ratelimit(group="alterar_senha", rate="5/m")
@@ -299,7 +420,9 @@ def solicitar_alteracao_senha(request):
         usuario=user,
         senha_hash=make_password(nova_senha),
     )
-    return Response({"sucesso": True, "mensagem": "Solicitação enviada. Aguarde aprovação do administrador."})
+    return Response(
+        {"sucesso": True, "mensagem": "Solicitação enviada. Aguarde aprovação do administrador."}
+    )
 
 
 @api_view(["GET"])
@@ -308,9 +431,11 @@ def status_solicitacao_senha(request):
     """Retorna o status da solicitação de senha mais recente do usuário atual."""
     from apps.users.models import SolicitacaoAlteracaoSenha
 
-    sol = SolicitacaoAlteracaoSenha.objects.filter(
-        usuario=request.user
-    ).order_by("-criado_em").first()
+    sol = (
+        SolicitacaoAlteracaoSenha.objects.filter(usuario=request.user)
+        .order_by("-criado_em")
+        .first()
+    )
 
     if not sol:
         return Response({"status": None})

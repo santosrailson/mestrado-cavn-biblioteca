@@ -39,6 +39,15 @@ export function useDocument(slug: string) {
       return response.data;
     },
     enabled: !!slug,
+    refetchInterval: (query) => {
+      const files = query.state.data?.arquivos || [];
+      return files.some(
+        (file) =>
+          file.processamentoStatus === 'pendente' || file.processamentoStatus === 'processando'
+      )
+        ? 2000
+        : false;
+    },
   });
 }
 

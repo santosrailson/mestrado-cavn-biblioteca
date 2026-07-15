@@ -49,8 +49,9 @@ def test_no_extension_raises():
         pass
 
 
+@override_settings(ALLOW_ARCHIVE_UPLOADS=True)
 def test_all_allowed_extensions_pass():
-    for ext in list(ALLOWED_EXTENSIONS)[:5]:
+    for ext in ALLOWED_EXTENSIONS:
         file = ContentFile(b"conteudo", name=f"arquivo{ext}")
         validate_file_extension(file)
 

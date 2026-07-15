@@ -6,7 +6,7 @@ from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.constants import DatePrecision, DocumentStatus, FileType
+from apps.core.constants import DatePrecision, DocumentStatus, FileType, ProcessingStatus
 from apps.core.models import BaseModel
 from apps.core.utils import generate_unique_slug
 from apps.core.validators import validate_upload
@@ -17,9 +17,7 @@ class Autor(BaseModel):
 
     nome = models.CharField(max_length=255, verbose_name=_("Nome"))
     biografia = models.TextField(blank=True, verbose_name=_("Biografia"))
-    data_nascimento = models.DateField(
-        null=True, blank=True, verbose_name=_("Data de nascimento")
-    )
+    data_nascimento = models.DateField(null=True, blank=True, verbose_name=_("Data de nascimento"))
     data_falecimento = models.DateField(
         null=True, blank=True, verbose_name=_("Data de falecimento")
     )
@@ -163,7 +161,9 @@ class Document(BaseModel):
         verbose_name_plural = _("Documentos")
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["status", "deleted_at", "-created_at"], name="documents_pub_created_idx"),
+            models.Index(
+                fields=["status", "deleted_at", "-created_at"], name="documents_pub_created_idx"
+            ),
             models.Index(fields=["slug"]),
             models.Index(fields=["tipo_documento"]),
             models.Index(fields=["data_documento"]),
@@ -242,6 +242,25 @@ class Arquivo(BaseModel):
     conteudo_ocr = models.TextField(
         blank=True,
         verbose_name=_("Conteúdo OCR"),
+    )
+    processamento_status = models.CharField(
+        max_length=20,
+        choices=ProcessingStatus.choices,
+        default=ProcessingStatus.PENDING,
+        verbose_name=_("Status do processamento"),
+    )
+    processamento_etapa = models.CharField(
+        max_length=40,
+        blank=True,
+        verbose_name=_("Etapa do processamento"),
+    )
+    processamento_progresso = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name=_("Progresso do processamento"),
+    )
+    processamento_erro = models.TextField(
+        blank=True,
+        verbose_name=_("Erro do processamento"),
     )
 
     class Meta:

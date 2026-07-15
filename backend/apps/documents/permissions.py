@@ -34,8 +34,13 @@ class CanApproveDocument(permissions.BasePermission):
     """Permite ações de moderação de workflow."""
 
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.can_moderate()
-        )
+        return request.user and request.user.is_authenticated and request.user.can_moderate()
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if not user or not user.is_authenticated or not user.can_moderate():
+            return False
+        # Segregação de funções: quem catalogou não pode aprovar/publicar o próprio item.
+        if getattr(view, "action", None) in {"aprovar", "publicar"}:
+            return obj.created_by_id != user.pk
+        return True

@@ -64,12 +64,15 @@ export const adminApi = {
   archiveDocument: (slug: string) =>
     api.post<Documento>(`/documentos/${slug}/arquivar/`).then((r) => r.data),
 
-  uploadFile: (documentoSlug: string, file: File) => {
+  uploadFile: (documentoSlug: string, file: File, onProgress?: (progress: number) => void) => {
     const formData = new FormData();
     formData.append('arquivo', file);
     return api
       .post(`/documentos/${documentoSlug}/arquivos/`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (event) => {
+          if (event.total) onProgress?.(Math.round((event.loaded / event.total) * 100));
+        },
       })
       .then((r) => r.data);
   },
@@ -151,7 +154,9 @@ export const adminApi = {
   solicitarSenha: (novaSenha: string) =>
     api.post('/auth/solicitar-senha/', { novaSenha }).then((r) => r.data),
   statusSolicitacaoSenha: () =>
-    api.get<{ status: string | null; criadoEm?: string }>('/auth/status-senha/').then((r) => r.data),
+    api
+      .get<{ status: string | null; criadoEm?: string }>('/auth/status-senha/')
+      .then((r) => r.data),
   listarSolicitacoesSenha: () =>
     api.get<SolicitacaoSenha[]>('/auth/solicitacoes-senha/').then((r) => r.data),
   aprovarSolicitacaoSenha: (id: string) =>

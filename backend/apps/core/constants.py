@@ -36,6 +36,13 @@ class FileType(models.TextChoices):
     WATERMARK = "watermark", _("Marca d'água")
 
 
+class ProcessingStatus(models.TextChoices):
+    PENDING = "pendente", _("Pendente")
+    PROCESSING = "processando", _("Processando")
+    COMPLETED = "concluido", _("Concluído")
+    FAILED = "falhou", _("Falhou")
+
+
 class AuditAction(models.TextChoices):
     CREATE = "criar", _("Criar")
     UPDATE = "atualizar", _("Atualizar")

@@ -3,7 +3,7 @@
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from apps.users.models import User
+from apps.users.models import PrivacyRequest, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -57,6 +57,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         source="password", write_only=True, validators=[validate_password]
     )
     username = serializers.CharField(required=False, allow_blank=True)
+    ativo = serializers.BooleanField(source="is_active", read_only=True)
 
     class Meta:
         model = User
@@ -130,3 +131,37 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             instance.set_password(senha)
 
         return super().update(instance, validated_data)
+
+
+class PrivacyRequestSerializer(serializers.ModelSerializer):
+    """Serializer de solicitações LGPD do titular e do administrador."""
+
+    tipoLabel = serializers.CharField(source="get_tipo_display", read_only=True)
+    statusLabel = serializers.CharField(source="get_status_display", read_only=True)
+    criadoEm = serializers.DateTimeField(source="criado_em", read_only=True)
+    atualizadoEm = serializers.DateTimeField(source="atualizado_em", read_only=True)
+    resolvidoEm = serializers.DateTimeField(source="resolvido_em", read_only=True)
+
+    class Meta:
+        model = PrivacyRequest
+        fields = [
+            "id",
+            "tipo",
+            "tipoLabel",
+            "descricao",
+            "status",
+            "statusLabel",
+            "resposta",
+            "criadoEm",
+            "atualizadoEm",
+            "resolvidoEm",
+        ]
+        read_only_fields = ["id", "status", "resposta", "criadoEm", "atualizadoEm", "resolvidoEm"]
+
+    def validate_descricao(self, value):
+        value = value.strip()
+        if len(value) < 10:
+            raise serializers.ValidationError(
+                "Descreva a solicitação com pelo menos 10 caracteres."
+            )
+        return value

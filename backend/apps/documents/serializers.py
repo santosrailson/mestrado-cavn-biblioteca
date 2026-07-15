@@ -68,6 +68,10 @@ class ArquivoSerializer(serializers.ModelSerializer):
             "altura",
             "tipo_arquivo",
             "processado_ocr",
+            "processamento_status",
+            "processamento_etapa",
+            "processamento_progresso",
+            "processamento_erro",
             "created_at",
         ]
 
@@ -84,9 +88,7 @@ class ArquivoSerializer(serializers.ModelSerializer):
         if is_public or can_access_private:
             request = self.context.get("request")
             if not is_public and request is not None:
-                return request.build_absolute_uri(
-                    f"/api/v1/documentos/arquivos/{obj.pk}/download/"
-                )
+                return request.build_absolute_uri(f"/api/v1/documentos/arquivos/{obj.pk}/download/")
             return obj.arquivo.url
         return None
 
@@ -117,7 +119,9 @@ class DocumentListSerializer(serializers.ModelSerializer):
         capas = getattr(obj, "capas", None)
         capa = capas[0] if capas else None
         if capa is None:
-            capa = obj.arquivos.filter(tipo_arquivo="original", mime_type__startswith="image/").first()
+            capa = obj.arquivos.filter(
+                tipo_arquivo="original", mime_type__startswith="image/"
+            ).first()
         return ArquivoSerializer(capa).data if capa else None
 
 
@@ -260,9 +264,7 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
 
         documento.documento_autores.exclude(autor_id__in=ids).delete()
         existentes = set(
-            documento.documento_autores.filter(autor_id__in=ids).values_list(
-                "autor_id", flat=True
-            )
+            documento.documento_autores.filter(autor_id__in=ids).values_list("autor_id", flat=True)
         )
         for autor_id in ids:
             if autor_id not in existentes:
@@ -289,26 +291,18 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
 
     def validate_autor_ids(self, value):
         ids = list(value or [])
-        existentes = set(
-            Autor.objects.filter(id__in=ids).values_list("id", flat=True)
-        )
+        existentes = set(Autor.objects.filter(id__in=ids).values_list("id", flat=True))
         invalidos = [str(pk) for pk in ids if pk not in existentes]
         if invalidos:
-            raise serializers.ValidationError(
-                f"Autores não encontrados: {', '.join(invalidos)}"
-            )
+            raise serializers.ValidationError(f"Autores não encontrados: {', '.join(invalidos)}")
         return value
 
     def validate_categoria_ids(self, value):
         ids = list(value or [])
-        existentes = set(
-            Categoria.objects.filter(id__in=ids).values_list("id", flat=True)
-        )
+        existentes = set(Categoria.objects.filter(id__in=ids).values_list("id", flat=True))
         invalidos = [str(pk) for pk in ids if pk not in existentes]
         if invalidos:
-            raise serializers.ValidationError(
-                f"Categorias não encontradas: {', '.join(invalidos)}"
-            )
+            raise serializers.ValidationError(f"Categorias não encontradas: {', '.join(invalidos)}")
         return value
 
     def _sync_tags(self, documento, nomes_tags):
@@ -323,9 +317,7 @@ class DocumentWriteSerializer(serializers.ModelSerializer):
 
         documento.documento_tags.exclude(tag_id__in=tag_ids).delete()
         existentes = set(
-            documento.documento_tags.filter(tag_id__in=tag_ids).values_list(
-                "tag_id", flat=True
-            )
+            documento.documento_tags.filter(tag_id__in=tag_ids).values_list("tag_id", flat=True)
         )
         for tag_id in tag_ids:
             if tag_id not in existentes:

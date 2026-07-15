@@ -8,6 +8,8 @@ import { Breadcrumb } from '@/shared/components/Breadcrumb';
 import { canCatalog, canAdminister } from '@/features/auth/lib/permissions';
 import adminApi from '../api/adminApi';
 import { useQuery } from '@tanstack/react-query';
+import { useLocale } from '@/shared/i18n';
+import api from '@/shared/lib/api';
 
 const PERFIL_LABEL: Record<string, string> = {
   catalogador: 'Catalogador',
@@ -31,7 +33,9 @@ function PasswordField({
   const [show, setShow] = useState(false);
   return (
     <div>
-      <label className="label" htmlFor={id}>{label}</label>
+      <label className="label" htmlFor={id}>
+        {label}
+      </label>
       <div className="relative">
         <input
           id={id}
@@ -94,14 +98,28 @@ function AdminPasswordForm() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-base font-semibold text-slate-800">Alterar senha</h2>
       {error && (
-        <p className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger-text">{error}</p>
+        <p className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger-text">
+          {error}
+        </p>
       )}
       {success && (
-        <p className="rounded-lg border border-success-border bg-success-bg px-3 py-2 text-sm text-success-text">{success}</p>
+        <p className="rounded-lg border border-success-border bg-success-bg px-3 py-2 text-sm text-success-text">
+          {success}
+        </p>
       )}
-      <PasswordField id="senha-atual" label="Senha atual" value={senhaAtual} onChange={setSenhaAtual} />
+      <PasswordField
+        id="senha-atual"
+        label="Senha atual"
+        value={senhaAtual}
+        onChange={setSenhaAtual}
+      />
       <PasswordField id="nova-senha" label="Nova senha" value={novaSenha} onChange={setNovaSenha} />
-      <PasswordField id="confirmar-senha" label="Confirmar nova senha" value={confirmar} onChange={setConfirmar} />
+      <PasswordField
+        id="confirmar-senha"
+        label="Confirmar nova senha"
+        value={confirmar}
+        onChange={setConfirmar}
+      />
       <button
         type="submit"
         disabled={loading || !senhaAtual || !novaSenha || !confirmar}
@@ -158,7 +176,8 @@ function UserPasswordRequestForm() {
 
       {statusData?.status === 'pendente' && (
         <div className="rounded-lg border border-warning-border bg-warning-bg px-3 py-2 text-sm text-warning-text">
-          Você já tem uma solicitação pendente de alteração de senha. Ao enviar uma nova, a anterior será substituída.
+          Você já tem uma solicitação pendente de alteração de senha. Ao enviar uma nova, a anterior
+          será substituída.
         </div>
       )}
       {statusData?.status === 'aprovada' && (
@@ -174,16 +193,31 @@ function UserPasswordRequestForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-sm text-text-muted">
-          Preencha a nova senha desejada. O administrador receberá a solicitação e precisará aprová-la.
+          Preencha a nova senha desejada. O administrador receberá a solicitação e precisará
+          aprová-la.
         </p>
         {error && (
-          <p className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger-text">{error}</p>
+          <p className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger-text">
+            {error}
+          </p>
         )}
         {success && (
-          <p className="rounded-lg border border-success-border bg-success-bg px-3 py-2 text-sm text-success-text">{success}</p>
+          <p className="rounded-lg border border-success-border bg-success-bg px-3 py-2 text-sm text-success-text">
+            {success}
+          </p>
         )}
-        <PasswordField id="nova-senha-req" label="Nova senha desejada" value={novaSenha} onChange={setNovaSenha} />
-        <PasswordField id="confirmar-senha-req" label="Confirmar nova senha" value={confirmar} onChange={setConfirmar} />
+        <PasswordField
+          id="nova-senha-req"
+          label="Nova senha desejada"
+          value={novaSenha}
+          onChange={setNovaSenha}
+        />
+        <PasswordField
+          id="confirmar-senha-req"
+          label="Confirmar nova senha"
+          value={confirmar}
+          onChange={setConfirmar}
+        />
         <button
           type="submit"
           disabled={loading || !novaSenha || !confirmar}
@@ -193,6 +227,136 @@ function UserPasswordRequestForm() {
         </button>
       </form>
     </div>
+  );
+}
+
+function PrivacyRightsPanel() {
+  const { t } = useLocale();
+  const [type, setType] = useState('acesso');
+  const [description, setDescription] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { data, refetch } = useQuery({
+    queryKey: ['privacy-requests'],
+    queryFn: async () => (await api.get('/auth/privacy/requests/')).data,
+  });
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setFeedback('');
+    setError('');
+    try {
+      await api.post('/auth/privacy/requests/', { tipo: type, descricao: description });
+      setDescription('');
+      setFeedback(t.legal.privacyRequestSuccess);
+      await refetch();
+    } catch (requestError: unknown) {
+      const detail = (requestError as { response?: { data?: { detail?: string } } })?.response?.data
+        ?.detail;
+      setError(detail ?? 'Não foi possível registrar a solicitação.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const download = async () => {
+    try {
+      const response = await api.get('/auth/privacy/export/', { responseType: 'blob' });
+      const url = URL.createObjectURL(response.data);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = 'cavn-dados-pessoais.json';
+      anchor.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setError(t.legal.privacyExportError);
+    }
+  };
+
+  return (
+    <Card className="lg:col-span-2">
+      <h2 className="mb-2 text-base font-semibold text-text">{t.legal.privacyCenterTitle}</h2>
+      <p className="mb-5 text-sm text-text-muted">{t.legal.privacyCenterDescription}</p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="label" htmlFor="privacy-request-type">
+              {t.legal.privacyRequestType}
+            </label>
+            <select
+              id="privacy-request-type"
+              className="input"
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+            >
+              {Object.entries(t.legal.privacyTypes).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="label" htmlFor="privacy-request-description">
+              {t.legal.privacyRequestDescription}
+            </label>
+            <textarea
+              id="privacy-request-description"
+              className="input min-h-28"
+              required
+              minLength={10}
+              maxLength={4000}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </div>
+          {feedback && (
+            <p
+              className="rounded-lg border border-success-border bg-success-bg px-3 py-2 text-sm text-success-text"
+              role="status"
+            >
+              {feedback}
+            </p>
+          )}
+          {error && (
+            <p
+              className="rounded-lg border border-danger-border bg-danger-bg px-3 py-2 text-sm text-danger-text"
+              role="alert"
+            >
+              {error}
+            </p>
+          )}
+          <button
+            className="btn-primary"
+            type="submit"
+            disabled={loading || description.trim().length < 10}
+          >
+            {t.legal.privacyRequestSubmit}
+          </button>
+        </form>
+        <div className="space-y-4">
+          <button className="btn-outline" type="button" onClick={download}>
+            {t.legal.privacyExport}
+          </button>
+          <div>
+            <h3 className="mb-2 text-sm font-semibold text-text">{t.legal.privacyRequestsTitle}</h3>
+            {data?.length ? (
+              <ul className="space-y-2 text-sm">
+                {data.map((item: { id: string; tipoLabel: string; statusLabel: string }) => (
+                  <li key={item.id} className="rounded border border-border p-2">
+                    <span className="font-medium">{item.tipoLabel}</span> — {item.statusLabel}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-text-muted">{t.legal.privacyNoRequests}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -230,15 +394,15 @@ export function ProfilePage() {
           </dl>
         </Card>
 
-        <Card>
-          {isAdmin ? <AdminPasswordForm /> : <UserPasswordRequestForm />}
-        </Card>
+        <Card>{isAdmin ? <AdminPasswordForm /> : <UserPasswordRequestForm />}</Card>
 
         {canCatalog(user) && (
           <Card>
             <TwoFactorSetup />
           </Card>
         )}
+
+        <PrivacyRightsPanel />
       </div>
     </>
   );

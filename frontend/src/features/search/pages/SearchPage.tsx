@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { SEO } from '@/shared/components/SEO';
 import { Button } from '@/shared/components/Button';
 import { DocumentCard } from '@/shared/components/DocumentCard';
 import { Pagination } from '@/shared/components/Pagination';
-import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Breadcrumb } from '@/shared/components/Breadcrumb';
 import { DateInput } from '@/shared/components/DateInput';
-import { EmptyState } from '@/shared/components/EmptyState';
+import { FeedbackState } from '@/shared/components/FeedbackState';
 import { SkeletonGrid } from '@/shared/components/Skeleton';
 import { useSearch } from '@/shared/hooks/useSearch';
 import { useCategories } from '@/shared/hooks/useCategories';
@@ -18,9 +17,14 @@ import { Loading } from '@/shared/components/Loading';
 import { CreateButton } from '@/features/admin/components/CreateButton';
 import { TipoDocumento } from '@/shared/types';
 import ptBR from '@/shared/i18n/pt-BR';
+import { useRecentSearches } from '@/shared/hooks/useRecentSearches';
+import { trackEvent } from '@/shared/lib/analytics';
+import { useLocale } from '@/shared/i18n';
 
 const DocumentFormModal = lazy(() =>
-  import('@/features/admin/components/DocumentFormModal').then((m) => ({ default: m.DocumentFormModal }))
+  import('@/features/admin/components/DocumentFormModal').then((m) => ({
+    default: m.DocumentFormModal,
+  }))
 );
 
 const tiposDocumento: { value: TipoDocumento | ''; label: string }[] = [
@@ -36,14 +40,25 @@ const tiposDocumento: { value: TipoDocumento | ''; label: string }[] = [
 ];
 
 export function SearchPage() {
+  const { t } = useLocale();
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchStartedAt = useRef<number | null>(null);
+  const lastReportedSearch = useRef<string>('');
+  const {
+    items: recentSearches,
+    add: addRecentSearch,
+    clear: clearRecentSearches,
+  } = useRecentSearches();
 
   const q = searchParams.get('q') || '';
   const [inputQ, setInputQ] = useState(q);
 
   // Sincroniza o input controlado quando o parâmetro q muda via navegação SPA.
-  useEffect(() => { setInputQ(q); }, [q]);
+  useEffect(() => {
+    setInputQ(q);
+  }, [q]);
   const tipo = (searchParams.get('tipo') as TipoDocumento | '') || '';
   const categoria = searchParams.get('categoria') || '';
   const tag = searchParams.get('tag') || '';
@@ -75,6 +90,26 @@ export function SearchPage() {
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
   const [editingDocumentId, setEditingDocumentId] = useState<string | undefined>();
 
+  const suggestions = [...recentSearches, ...(categories || []).map((category) => category.nome)]
+    .filter((value, index, values) => values.indexOf(value) === index)
+    .filter((value) => !inputQ.trim() || value.toLowerCase().includes(inputQ.toLowerCase()))
+    .slice(0, 6);
+
+  useEffect(() => {
+    if (isLoading || !results) return;
+    const key = `${q}|${tipo}|${categoria}|${tag}|${dataInicio}|${dataFim}|${page}`;
+    if (lastReportedSearch.current === key) return;
+    lastReportedSearch.current = key;
+    const duration =
+      searchStartedAt.current === null
+        ? undefined
+        : Math.round(performance.now() - searchStartedAt.current);
+    trackEvent(results.total === 0 ? 'search_no_results' : 'search_completed', {
+      result_count: results.total,
+      duration_ms: duration,
+    });
+  }, [isLoading, results, q, tipo, categoria, tag, dataInicio, dataFim, page]);
+
   const openDocumentCreate = () => {
     setEditingDocumentId(undefined);
     setDocumentModalOpen(true);
@@ -98,24 +133,31 @@ export function SearchPage() {
 
   const clearFilters = () => {
     setSearchParams({ q });
+    trackEvent('search_filters_cleared');
   };
 
   const hasFilters = tipo || categoria || tag || dataInicio || dataFim;
 
   return (
     <>
-      <SEO title={ptBR.search.title} />
+      <SEO title={t.search.title} />
       <main id="main-content" className="container-page py-6">
         <Breadcrumb items={[{ label: ptBR.navigation.collection }]} />
 
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
-            <h1 className="section-title">{ptBR.search.title}</h1>
+            <h1 className="section-title">{t.search.title}</h1>
             {canEdit && <CreateButton onClick={openDocumentCreate} label="Documento" />}
           </div>
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              addRecentSearch(inputQ);
+              searchStartedAt.current = performance.now();
+              trackEvent('search_submitted', {
+                has_query: Boolean(inputQ.trim()),
+                query_length: inputQ.trim().length,
+              });
               updateParam('q', inputQ);
             }}
             className="flex gap-2"
@@ -131,19 +173,70 @@ export function SearchPage() {
                 type="search"
                 value={inputQ}
                 onChange={(e) => setInputQ(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => window.setTimeout(() => setShowSuggestions(false), 120)}
                 placeholder={ptBR.navigation.searchPlaceholder}
                 className="input pl-10"
                 aria-label={ptBR.navigation.searchPlaceholder}
+                aria-autocomplete="list"
+                aria-controls="search-suggestions"
+                autoComplete="off"
               />
+              {showSuggestions && inputQ.trim() && suggestions.length > 0 && (
+                <ul
+                  id="search-suggestions"
+                  className="absolute inset-x-0 top-full z-20 mt-1 rounded-lg border border-border bg-bg p-1 shadow-md"
+                  role="listbox"
+                  aria-label={t.search.suggestions}
+                >
+                  {suggestions.map((suggestion) => (
+                    <li key={suggestion} role="option" aria-selected="false">
+                      <button
+                        type="button"
+                        className="w-full rounded px-3 py-2 text-left text-sm text-text hover:bg-surface-alt"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          setInputQ(suggestion);
+                          updateParam('q', suggestion);
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        {suggestion}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
             <Button type="submit" variant="primary" isLoading={isLoading}>
               {ptBR.common.search}
             </Button>
           </form>
+          {recentSearches.length > 0 && (
+            <div className="mt-2 flex items-center gap-2 text-xs text-text-muted">
+              <span>{t.search.recentSearches}:</span>
+              {recentSearches.slice(0, 3).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="rounded-full border border-border px-2 py-1 hover:bg-surface-alt"
+                  onClick={() => {
+                    setInputQ(item);
+                    updateParam('q', item);
+                  }}
+                >
+                  {item}
+                </button>
+              ))}
+              <button type="button" className="underline" onClick={clearRecentSearches}>
+                {t.search.clearHistory}
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-col gap-6 lg:flex-row">
-          <aside className="lg:w-64" aria-label={ptBR.search.filters}>
+          <aside className="lg:w-64" aria-label={t.search.filters}>
             <Button
               type="button"
               variant="outline"
@@ -154,7 +247,7 @@ export function SearchPage() {
               aria-controls="filter-panel"
             >
               <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-              {ptBR.search.filters}
+              {t.search.filters}
             </Button>
 
             <div
@@ -163,15 +256,16 @@ export function SearchPage() {
             >
               <div className="card">
                 <div className="mb-3 flex items-center justify-between">
-                  <h2 className="font-semibold">{ptBR.search.filters}</h2>
+                  <h2 className="font-semibold">{t.search.filters}</h2>
                   {hasFilters && (
                     <button
                       type="button"
                       onClick={clearFilters}
-                      className="flex items-center gap-1 text-xs text-red-600 no-underline"
+                      className="flex items-center gap-1 text-xs text-danger no-underline"
+                      aria-label={t.search.clearFilters}
                     >
                       <X className="h-3 w-3" aria-hidden="true" />
-                      {ptBR.search.clearFilters}
+                      {t.search.clearFilters}
                     </button>
                   )}
                 </div>
@@ -179,7 +273,7 @@ export function SearchPage() {
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="filter-type" className="label">
-                      {ptBR.search.type}
+                      {t.search.type}
                     </label>
                     <select
                       id="filter-type"
@@ -197,7 +291,7 @@ export function SearchPage() {
 
                   <div>
                     <label htmlFor="filter-category" className="label">
-                      {ptBR.search.category}
+                      {t.search.category}
                     </label>
                     <select
                       id="filter-category"
@@ -216,7 +310,7 @@ export function SearchPage() {
 
                   <div>
                     <label htmlFor="filter-tag" className="label">
-                      {ptBR.search.tags}
+                      {t.search.tags}
                     </label>
                     <input
                       id="filter-tag"
@@ -229,17 +323,17 @@ export function SearchPage() {
                   </div>
 
                   <div>
-                    <span className="label">{ptBR.search.period}</span>
+                    <span className="label">{t.search.period}</span>
                     <div className="grid grid-cols-2 gap-2">
                       <DateInput
                         id="filter-from"
-                        aria-label={ptBR.search.from}
+                        aria-label={t.search.from}
                         value={dataInicio}
                         onChange={(e) => updateParam('data_inicio', e.target.value)}
                       />
                       <DateInput
                         id="filter-to"
-                        aria-label={ptBR.search.to}
+                        aria-label={t.search.to}
                         value={dataFim}
                         onChange={(e) => updateParam('data_fim', e.target.value)}
                       />
@@ -248,7 +342,7 @@ export function SearchPage() {
 
                   <div>
                     <label htmlFor="filter-sort" className="label">
-                      {ptBR.search.sortBy}
+                      {t.search.sortBy}
                     </label>
                     <select
                       id="filter-sort"
@@ -256,9 +350,9 @@ export function SearchPage() {
                       onChange={(e) => updateParam('ordenacao', e.target.value)}
                       className="input"
                     >
-                      <option value="relevancia">{ptBR.search.relevance}</option>
-                      <option value="data">{ptBR.search.date}</option>
-                      <option value="titulo">{ptBR.search.title}</option>
+                      <option value="relevancia">{t.search.relevance}</option>
+                      <option value="data">{t.search.date}</option>
+                      <option value="titulo">{t.search.sortTitle}</option>
                     </select>
                   </div>
                 </div>
@@ -269,17 +363,20 @@ export function SearchPage() {
           <section className="flex-1" aria-live="polite" aria-busy={isLoading}>
             <div className="mb-4 flex items-center justify-between">
               <p className="text-sm text-[var(--color-text-muted)]">
-                {results ? `${results.total} resultados encontrados` : ptBR.common.loading}
+                {results
+                  ? t.search.resultsCount.replace('{count}', String(results.total))
+                  : t.common.loading}
               </p>
             </div>
 
             {isLoading && <SkeletonGrid count={9} columns={3} />}
-            {error && <ErrorMessage onRetry={refetch} />}
+            {error && <FeedbackState state="error" onRetry={refetch} />}
 
             {results && results.dados.length === 0 && !isLoading && (
-              <EmptyState
-                title={ptBR.search.noResults}
-                description="Tente remover alguns filtros ou usar termos diferentes na busca."
+              <FeedbackState
+                state="empty"
+                title={t.search.noResults}
+                message={t.search.noResultsDescription}
                 action={
                   hasFilters ? (
                     <button type="button" onClick={clearFilters} className="btn-secondary">

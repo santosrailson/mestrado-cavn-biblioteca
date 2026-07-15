@@ -1,7 +1,8 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.http import HttpRequest
 
-from apps.audit.services import AuditoriaService
+from apps.audit.services import AuditoriaService, verify_integrity_chain
 from apps.users.tests.factories import UserFactory
 
 
@@ -55,3 +56,18 @@ class TestAuditoriaService:
         for acao in ["criar", "atualizar", "excluir", "login", "logout"]:
             registro = AuditoriaService.registrar(acao=acao, entidade="Test")
             assert registro.acao == acao
+
+    def test_records_are_hash_chained_and_verifiable(self):
+        first = AuditoriaService.registrar(acao="criar", entidade="Document")
+        second = AuditoriaService.registrar(acao="atualizar", entidade="Document")
+
+        assert second.previous_hash == first.integrity_hash
+        assert verify_integrity_chain() == (True, "Cadeia de auditoria íntegra.")
+
+    def test_records_cannot_be_changed_or_deleted(self):
+        registro = AuditoriaService.registrar(acao="criar", entidade="Document")
+        registro.entidade = "User"
+        with pytest.raises(ValidationError):
+            registro.save()
+        with pytest.raises(ValidationError):
+            registro.delete()

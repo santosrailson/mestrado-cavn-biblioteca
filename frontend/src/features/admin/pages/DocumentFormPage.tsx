@@ -11,9 +11,9 @@ import { Card } from '@/shared/components/Card';
 import { Loading } from '@/shared/components/Loading';
 import { DocumentFormSteps } from '../components/DocumentFormSteps';
 import { documentSchema, DocumentFormData, defaultDocumentFormValues } from '../lib/documentSchema';
-import { documentSteps } from '../lib/documentFormConstants';
+import { getDocumentSteps } from '../lib/documentFormConstants';
 import { useCategories } from '@/shared/hooks/useCategories';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { clsx } from 'clsx';
 import { Autor } from '@/shared/types';
 
@@ -24,6 +24,8 @@ export function DocumentFormPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
+  const documentSteps = getDocumentSteps(t);
   const [step, setStep] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const isEdit = Boolean(id);
@@ -182,17 +184,15 @@ export function DocumentFormPage() {
     <>
       <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-text">
-          {isEdit ? ptBR.admin.editDocument : ptBR.admin.newDocument}
+          {isEdit ? t.admin.editDocument : t.admin.newDocument}
         </h1>
         {!isEdit && hasDraft && (
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-text-muted">Rascunho salvo automaticamente</span>
-            <button
-              type="button"
-              onClick={clearDraft}
-              className="text-danger hover:underline"
-            >
-              Descartar rascunho
+            <span className="text-text-muted">
+              {t.admin.form.draftSaved.replace(' às {time}.', '')}
+            </span>
+            <button type="button" onClick={clearDraft} className="text-danger hover:underline">
+              {t.admin.form.discardDraft}
             </button>
           </div>
         )}
@@ -204,7 +204,9 @@ export function DocumentFormPage() {
             <div
               className={clsx(
                 'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold',
-                index <= step ? 'bg-primary text-primary-contrast' : 'bg-surface-alt text-text-muted'
+                index <= step
+                  ? 'bg-primary text-primary-contrast'
+                  : 'bg-surface-alt text-text-muted'
               )}
             >
               {index + 1}
@@ -238,14 +240,14 @@ export function DocumentFormPage() {
             onClick={() => setStep(Math.max(0, step - 1))}
             disabled={step === 0}
           >
-            {ptBR.common.previous}
+            {t.common.previous}
           </Button>
           <div className="flex gap-2">
             <Button type="button" variant="ghost" onClick={() => navigate('/admin/documentos')}>
-              {ptBR.common.cancel}
+              {t.common.cancel}
             </Button>
             <Button type="submit" variant="primary" isLoading={saveMutation.isPending}>
-              {step === documentSteps.length - 1 ? ptBR.common.save : ptBR.common.next}
+              {step === documentSteps.length - 1 ? t.common.save : t.common.next}
             </Button>
           </div>
         </div>

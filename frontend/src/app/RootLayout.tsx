@@ -5,6 +5,7 @@ import { Loading } from '@/shared/components/Loading';
 import { ToastContainer } from '@/shared/components/Toast';
 import { ScrollToTopButton } from '@/shared/components/ScrollToTopButton';
 import { PWAUpdatePrompt } from '@/shared/components/PWAUpdatePrompt';
+import { AnalyticsConsentBanner } from '@/shared/components/AnalyticsConsentBanner';
 import { AppScrollRestoration } from './ScrollRestoration';
 
 export function RootLayout() {
@@ -23,6 +24,7 @@ export function RootLayout() {
       <ToastContainer />
       <ScrollToTopButton />
       <PWAUpdatePrompt />
+      <AnalyticsConsentBanner />
     </ErrorBoundary>
   );
 }

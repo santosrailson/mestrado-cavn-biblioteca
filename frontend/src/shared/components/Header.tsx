@@ -4,21 +4,21 @@ import { Menu, X, User } from 'lucide-react';
 import { AccessibilityBar } from './AccessibilityBar';
 import { AdminToolbar } from '@/features/admin/components/AdminToolbar';
 import { SearchForm } from './SearchForm';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { clsx } from 'clsx';
-
-const navItems = [
-  { to: '/', label: ptBR.navigation.home },
-  { to: '/busca', label: ptBR.navigation.collection },
-  { to: '/linha-do-tempo', label: ptBR.navigation.timeline },
-  { to: '/galeria', label: ptBR.navigation.gallery },
-  { to: '/producao-academica', label: ptBR.navigation.academic },
-];
 
 export function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { t } = useLocale();
+  const navItems = [
+    { to: '/', label: t.navigation.home },
+    { to: '/busca', label: t.navigation.collection },
+    { to: '/linha-do-tempo', label: t.navigation.timeline },
+    { to: '/galeria', label: t.navigation.gallery },
+    { to: '/producao-academica', label: t.navigation.academic },
+  ];
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -40,7 +40,7 @@ export function Header() {
               height="40"
             />
             <div className="hidden flex-col sm:flex">
-              <span className="text-sm font-bold leading-tight">{ptBR.common.siteShortName}</span>
+              <span className="text-sm font-bold leading-tight">{t.common.siteShortName}</span>
               <span className="text-xs text-text-muted">UFPB</span>
             </div>
           </Link>
@@ -52,7 +52,7 @@ export function Header() {
               <div className="hidden items-center gap-2 md:flex">
                 <span className="text-sm text-text-muted">{user?.nome}</span>
                 <Link to="/admin" className="btn-secondary text-xs">
-                  {ptBR.common.accessAdmin}
+                  {t.common.accessAdmin}
                 </Link>
               </div>
             ) : (
@@ -61,7 +61,7 @@ export function Header() {
                 className="hidden items-center gap-1 btn-secondary text-xs md:inline-flex"
               >
                 <User className="h-4 w-4" aria-hidden="true" />
-                {ptBR.common.login}
+                {t.common.login}
               </Link>
             )}
 
@@ -71,7 +71,7 @@ export function Header() {
               className="rounded p-2 text-text hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-focus md:hidden"
               aria-expanded={menuOpen}
               aria-controls="mobile-menu"
-              aria-label={menuOpen ? ptBR.accessibility.closeMenu : ptBR.accessibility.openMenu}
+              aria-label={menuOpen ? t.accessibility.closeMenu : t.accessibility.openMenu}
             >
               {menuOpen ? (
                 <X className="h-6 w-6" aria-hidden="true" />
@@ -86,7 +86,7 @@ export function Header() {
           <nav
             id="mobile-menu"
             className="border-t border-border bg-bg p-4 md:hidden"
-            aria-label={ptBR.accessibility.menu}
+            aria-label={t.accessibility.menu}
           >
             <SearchForm className="mb-4" onSubmit={closeMenu} />
             <ul className="space-y-2">
@@ -114,15 +114,15 @@ export function Header() {
                       onClick={closeMenu}
                       className="btn-secondary text-center text-sm"
                     >
-                      {ptBR.common.accessAdmin}
+                      {t.common.accessAdmin}
                     </Link>
                     <button type="button" onClick={logout} className="btn-outline text-sm">
-                      {ptBR.common.logout}
+                      {t.common.logout}
                     </button>
                   </div>
                 ) : (
                   <Link to="/login" onClick={closeMenu} className="btn-primary text-center text-sm">
-                    {ptBR.common.login}
+                    {t.common.login}
                   </Link>
                 )}
               </li>
@@ -132,7 +132,7 @@ export function Header() {
 
         <nav
           className="hidden border-t border-border bg-surface md:block"
-          aria-label={ptBR.accessibility.menu}
+          aria-label={t.accessibility.menu}
         >
           <div className="container-page">
             <ul className="flex items-center gap-1">

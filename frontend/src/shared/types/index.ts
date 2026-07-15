@@ -63,6 +63,10 @@ export interface Arquivo {
   tipoArquivo: TipoArquivo;
   processadoOcr: boolean;
   conteudoOcr?: string;
+  processamentoStatus?: 'pendente' | 'processando' | 'concluido' | 'falhou';
+  processamentoEtapa?: string;
+  processamentoProgresso?: number;
+  processamentoErro?: string;
   url?: string;
   thumbnailUrl?: string;
   createdAt: string;

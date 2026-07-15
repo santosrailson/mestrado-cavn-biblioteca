@@ -1,4 +1,6 @@
-"""Modelos de usuários customizados com perfis de acesso."""
+"""Modelos de usuários customizados com perfis de acesso e privacidade."""
+
+import uuid
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
@@ -100,38 +102,90 @@ class User(AbstractUser):
 
 class SolicitacaoAlteracaoSenha(models.Model):
     class Status(models.TextChoices):
-        PENDENTE = 'pendente', 'Pendente'
-        APROVADA = 'aprovada', 'Aprovada'
-        REJEITADA = 'rejeitada', 'Rejeitada'
+        PENDENTE = "pendente", "Pendente"
+        APROVADA = "aprovada", "Aprovada"
+        REJEITADA = "rejeitada", "Rejeitada"
 
     usuario = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='solicitacoes_senha',
-        verbose_name=_('Usuário'),
+        related_name="solicitacoes_senha",
+        verbose_name=_("Usuário"),
     )
-    senha_hash = models.CharField(max_length=256, verbose_name=_('Senha (hash)'))
+    senha_hash = models.CharField(max_length=256, verbose_name=_("Senha (hash)"))
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
         default=Status.PENDENTE,
-        verbose_name=_('Status'),
+        verbose_name=_("Status"),
     )
-    criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_('Criado em'))
-    resolvido_em = models.DateTimeField(null=True, blank=True, verbose_name=_('Resolvido em'))
+    criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
+    resolvido_em = models.DateTimeField(null=True, blank=True, verbose_name=_("Resolvido em"))
     resolvido_por = models.ForeignKey(
         User,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='solicitacoes_resolvidas',
-        verbose_name=_('Resolvido por'),
+        related_name="solicitacoes_resolvidas",
+        verbose_name=_("Resolvido por"),
     )
 
     class Meta:
-        verbose_name = _('Solicitação de Alteração de Senha')
-        verbose_name_plural = _('Solicitações de Alteração de Senha')
-        ordering = ['-criado_em']
+        verbose_name = _("Solicitação de Alteração de Senha")
+        verbose_name_plural = _("Solicitações de Alteração de Senha")
+        ordering = ["-criado_em"]
 
     def __str__(self):
         return f"Solicitação de {self.usuario.email} ({self.status})"
+
+
+class PrivacyRequest(models.Model):
+    """Solicitação rastreável de exercício de direitos do titular."""
+
+    class RequestType(models.TextChoices):
+        ACCESS = "acesso", "Confirmação e acesso"
+        RECTIFICATION = "correcao", "Correção de dados"
+        DELETION = "eliminacao", "Eliminação, quando aplicável"
+        PORTABILITY = "portabilidade", "Portabilidade"
+        OBJECTION = "oposicao", "Oposição ao tratamento"
+        CONSENT = "consentimento", "Revogação de consentimento"
+
+    class Status(models.TextChoices):
+        PENDING = "pendente", "Pendente"
+        IN_REVIEW = "em_analise", "Em análise"
+        COMPLETED = "concluida", "Concluída"
+        REJECTED = "rejeitada", "Rejeitada"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="privacy_requests",
+        verbose_name=_("Titular"),
+    )
+    tipo = models.CharField(max_length=20, choices=RequestType.choices, verbose_name=_("Tipo"))
+    descricao = models.TextField(max_length=4000, verbose_name=_("Descrição"))
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING, verbose_name=_("Status")
+    )
+    resposta = models.TextField(blank=True, verbose_name=_("Resposta"))
+    criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
+    atualizado_em = models.DateTimeField(auto_now=True, verbose_name=_("Atualizado em"))
+    resolvido_em = models.DateTimeField(null=True, blank=True, verbose_name=_("Resolvido em"))
+    resolvido_por = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="privacy_requests_resolved",
+        verbose_name=_("Resolvido por"),
+    )
+
+    class Meta:
+        verbose_name = _("Solicitação de privacidade")
+        verbose_name_plural = _("Solicitações de privacidade")
+        ordering = ["-criado_em"]
+        indexes = [models.Index(fields=["usuario", "status"], name="privacy_user_status_idx")]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.usuario.email}"

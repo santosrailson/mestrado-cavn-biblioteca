@@ -1,42 +1,41 @@
 import { SEO } from '@/shared/components/SEO';
 import { Breadcrumb } from '@/shared/components/Breadcrumb';
 import { Section, SectionHeader } from '@/shared/components/Section';
-import ptBR from '@/shared/i18n/pt-BR';
+import { Link } from 'react-router-dom';
+import { useLocale } from '@/shared/i18n';
 
 export function PrivacyPage() {
+  const { t } = useLocale();
+  const legal = t.legal;
   return (
     <>
-      <SEO title={ptBR.footer.privacy} />
+      <SEO title={legal.privacyTitle} />
       <main id="main-content">
         <Section ariaLabelledby="privacy-title">
-          <Breadcrumb items={[{ label: ptBR.footer.privacy }]} className="mb-6" />
+          <Breadcrumb items={[{ label: legal.privacyTitle }]} className="mb-6" />
           <SectionHeader
-            title={ptBR.footer.privacy}
+            title={legal.privacyTitle}
             titleId="privacy-title"
-            subtitle="Como tratamos suas informações"
+            subtitle={legal.privacySubtitle}
             centered
           />
 
           <div className="prose prose-slate mx-auto max-w-3xl">
+            <p>{legal.privacyIntro}</p>
+            <h3>{legal.privacyCollectedTitle}</h3>
+            <p>{legal.privacyCollected}</p>
+            <h3>{legal.privacyPurposeTitle}</h3>
+            <p>{legal.privacyPurpose}</p>
+            <h3>{legal.privacyRightsTitle}</h3>
+            <p>{legal.privacyRights}</p>
             <p>
-              O Repositório Digital CAVN respeita sua privacidade e está comprometido com a proteção
-              dos dados pessoais dos usuários.
+              <Link to="/admin/perfil">{legal.privacyCenterTitle}</Link>
             </p>
-            <h3>Dados coletados</h3>
+            <h3>{legal.privacySecurityTitle}</h3>
+            <p>{legal.privacySecurity}</p>
+            <h3>{legal.privacyContact}</h3>
             <p>
-              Para usuários administrativos, coletamos nome e e-mail necessários para autenticação e
-              controle de acesso. Para visitantes, não coletamos dados pessoais, exceto informações
-              técnicas de acesso (logs) utilizadas para melhoria do serviço.
-            </p>
-            <h3>Uso dos dados</h3>
-            <p>
-              Os dados são utilizados exclusivamente para fins de autenticação, auditoria, segurança
-              e melhoria contínua da plataforma.
-            </p>
-            <h3>Segurança</h3>
-            <p>
-              Adotamos medidas técnicas e administrativas para proteger as informações contra
-              acessos não autorizados, alterações ou divulgações indevidas.
+              <a href="mailto:cavn@ufpb.br">cavn@ufpb.br</a>
             </p>
           </div>
         </Section>

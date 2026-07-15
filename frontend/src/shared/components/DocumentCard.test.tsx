@@ -19,7 +19,9 @@ const mockDocumento: Documento = {
 };
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <MemoryRouter>{children}</MemoryRouter>
+  <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    {children}
+  </MemoryRouter>
 );
 
 describe('DocumentCard', () => {
