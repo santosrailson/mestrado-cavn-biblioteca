@@ -1,7 +1,7 @@
 # =============================================================================
 # Dockerfile — Frontend React do Repositório Digital CAVN
 # =============================================================================
-FROM node:22-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
