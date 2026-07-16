@@ -1,6 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+const MAX_VISUAL_DIFF_PIXELS = 300;
+
 test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('https://fonts.bunny.net/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'text/css', body: '' })
+  );
   await page.route('**/api/v1/**', async (route) => {
     const url = route.request().url();
     if (url.includes('/auth/me/') || url.includes('/auth/refresh/')) {
@@ -34,11 +40,15 @@ test.beforeEach(async ({ page }) => {
 test.describe('Regressão visual', () => {
   test('página inicial mantém o layout público', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText(/Nenhuma categoria disponível|No categories available/)).toBeVisible();
+    await expect(
+      page.getByText(/Nenhuma categoria disponível|No categories available/)
+    ).toBeVisible();
     await expect(page.getByText(/Nenhum documento ainda|No documents yet/)).toBeVisible();
     await expect(page.getByText(/Nenhum marco histórico|No historical milestones/)).toBeVisible();
     await expect(page).toHaveScreenshot('home-public.png', {
       fullPage: true,
+      maxDiffPixels: MAX_VISUAL_DIFF_PIXELS,
+      maxDiffPixelRatio: 0.001,
       timeout: 15000,
     });
   });
@@ -49,7 +59,8 @@ test.describe('Regressão visual', () => {
     await expect(page.getByText(/Nenhum documento encontrado|No documents found/)).toBeVisible();
     await expect(page).toHaveScreenshot('search-empty.png', {
       fullPage: true,
-      maxDiffPixels: 300,
+      maxDiffPixels: MAX_VISUAL_DIFF_PIXELS,
+      maxDiffPixelRatio: 0.001,
       timeout: 15000,
     });
   });

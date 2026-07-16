@@ -22,9 +22,16 @@ async function expectNoAccessibilityViolations(page: Page) {
 }
 
 test.describe('Acessibilidade WCAG 2.2 AA', () => {
-  for (const path of ['/', '/busca', '/acessibilidade', '/politica-de-privacidade', '/termo-de-uso']) {
+  for (const path of [
+    '/',
+    '/busca',
+    '/acessibilidade',
+    '/politica-de-privacidade',
+    '/termo-de-uso',
+  ]) {
     test(`não apresenta violações WCAG em ${path}`, async ({ page }) => {
       await page.goto(path);
+      await page.waitForLoadState('networkidle');
       await expectNoAccessibilityViolations(page);
     });
   }

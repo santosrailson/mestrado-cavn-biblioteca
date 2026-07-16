@@ -8,10 +8,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [
-    ['html', { outputFolder: 'playwright-report' }],
-    ['list'],
-  ],
+  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
   use: {
     baseURL: externalBaseUrl || 'http://127.0.0.1:5173',
     trace: 'on-first-retry',
@@ -26,7 +23,7 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: 'VITE_API_URL=/api/v1 npm run dev -- --host 127.0.0.1',
+        command: 'CAVN_E2E=true VITE_API_URL=/api/v1 npm run dev -- --host 127.0.0.1',
         url: 'http://127.0.0.1:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 30000,
