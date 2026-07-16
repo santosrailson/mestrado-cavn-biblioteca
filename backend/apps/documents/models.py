@@ -6,7 +6,13 @@ from django.contrib.postgres.search import SearchVectorField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.constants import DatePrecision, DocumentStatus, FileType, ProcessingStatus
+from apps.core.constants import (
+    AntivirusStatus,
+    DatePrecision,
+    DocumentStatus,
+    FileType,
+    ProcessingStatus,
+)
 from apps.core.models import BaseModel
 from apps.core.utils import generate_unique_slug
 from apps.core.validators import validate_upload
@@ -261,6 +267,22 @@ class Arquivo(BaseModel):
     processamento_erro = models.TextField(
         blank=True,
         verbose_name=_("Erro do processamento"),
+    )
+    antivirus_status = models.CharField(
+        max_length=20,
+        choices=AntivirusStatus.choices,
+        default=AntivirusStatus.PENDING,
+        verbose_name=_("Status do antivírus"),
+    )
+    antivirus_escaneado_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Escaneado em"),
+    )
+    antivirus_diagnostico = models.CharField(
+        max_length=500,
+        blank=True,
+        verbose_name=_("Diagnóstico do antivírus"),
     )
 
     class Meta:

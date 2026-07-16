@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 
 export function PWAUpdatePrompt() {
+  const { t } = useOptionalLocale();
   const [needRefresh, setNeedRefresh] = useState(false);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
 
@@ -46,19 +47,15 @@ export function PWAUpdatePrompt() {
       className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg border border-primary bg-surface p-4 shadow-lg"
       role="alert"
     >
-      <p className="text-sm text-text">{ptBR.pwa.updateAvailable}</p>
-      <button
-        type="button"
-        onClick={handleUpdate}
-        className="btn-primary text-xs"
-      >
-        {ptBR.pwa.update}
+      <p className="text-sm text-text">{t.pwa.updateAvailable}</p>
+      <button type="button" onClick={handleUpdate} className="btn-primary text-xs">
+        {t.pwa.update}
       </button>
       <button
         type="button"
         onClick={handleDismiss}
         className="ml-2 text-sm text-text-muted hover:text-text"
-        aria-label="Fechar"
+        aria-label={t.common.close}
       >
         ✕
       </button>

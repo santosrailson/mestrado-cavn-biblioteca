@@ -59,9 +59,7 @@ export function SectionHeader({
             <p className="mx-auto mt-2 max-w-2xl text-[var(--color-text-muted)]">{subtitle}</p>
           )}
         </div>
-        {action && (
-          <div className="absolute right-0 top-0 flex items-center gap-2">{action}</div>
-        )}
+        {action && <div className="absolute right-0 top-0 flex items-center gap-2">{action}</div>}
       </div>
     );
   }

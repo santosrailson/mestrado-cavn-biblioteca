@@ -28,10 +28,13 @@ class TestDocumentPermissions:
     def test_cataloguer_can_create(self, api_client):
         catalogador = UserFactory(role=UserRole.CATALOGUER)
         api_client.force_authenticate(user=catalogador)
-        response = api_client.post("/api/v1/documentos/", {
-            "titulo": "Novo Documento",
-            "tipo_documento": "ata",
-        })
+        response = api_client.post(
+            "/api/v1/documentos/",
+            {
+                "titulo": "Novo Documento",
+                "tipo_documento": "ata",
+            },
+        )
         assert response.status_code == 201
 
     def test_cataloguer_can_edit_own_draft(self, api_client):
@@ -138,9 +141,7 @@ class TestDocumentPermissions:
         assert response.status_code == 400
 
     def test_published_document_visible_to_all(self, api_client):
-        doc = Document.objects.create(
-            titulo="Público", status=DocumentStatus.PUBLISHED
-        )
+        doc = Document.objects.create(titulo="Público", status=DocumentStatus.PUBLISHED)
         response = api_client.get(f"/api/v1/documentos/{doc.slug}/")
         assert response.status_code == 200
 

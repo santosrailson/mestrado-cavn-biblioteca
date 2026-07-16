@@ -60,6 +60,11 @@ class User(AbstractUser):
         null=True,
         verbose_name=_("Avatar"),
     )
+    auth_token_version = models.PositiveIntegerField(
+        default=0,
+        verbose_name=_("Versão dos tokens de autenticação"),
+        help_text=_("Incrementada para revogar imediatamente todas as sessões ativas."),
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["username", "first_name", "last_name"]
@@ -180,6 +185,17 @@ class PrivacyRequest(models.Model):
         related_name="privacy_requests_resolved",
         verbose_name=_("Resolvido por"),
     )
+    prazo_em = models.DateTimeField(null=True, blank=True, verbose_name=_("Prazo interno"))
+    base_legal = models.CharField(max_length=160, blank=True, verbose_name=_("Base legal"))
+    responsavel = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="privacy_requests_assigned",
+        verbose_name=_("Responsável"),
+    )
+    decisao_motivo = models.TextField(blank=True, verbose_name=_("Motivo da decisão"))
 
     class Meta:
         verbose_name = _("Solicitação de privacidade")
@@ -189,3 +205,30 @@ class PrivacyRequest(models.Model):
 
     def __str__(self):
         return f"{self.get_tipo_display()} — {self.usuario.email}"
+
+
+class TwoFactorRecoveryCode(models.Model):
+    """Código de recuperação de uso único para o segundo fator."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="twofactor_recovery_codes",
+        verbose_name=_("Usuário"),
+    )
+    codigo_hash = models.CharField(max_length=256, verbose_name=_("Hash do código"))
+    usado_em = models.DateTimeField(null=True, blank=True, verbose_name=_("Usado em"))
+    criado_em = models.DateTimeField(auto_now_add=True, verbose_name=_("Criado em"))
+
+    class Meta:
+        verbose_name = _("Código de recuperação 2FA")
+        verbose_name_plural = _("Códigos de recuperação 2FA")
+        ordering = ["criado_em"]
+        indexes = [
+            models.Index(fields=["usuario", "usado_em"], name="twofactor_recovery_active_idx"),
+        ]
+
+    def __str__(self):
+        status = "usado" if self.usado_em else "disponível"
+        return f"Código 2FA de {self.usuario.email} ({status})"

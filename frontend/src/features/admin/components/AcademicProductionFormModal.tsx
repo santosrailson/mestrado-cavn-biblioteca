@@ -5,18 +5,8 @@ import { useToast } from '@/shared/hooks/useToast';
 import { Button } from '@/shared/components/Button';
 import { Input } from '@/shared/components/Input';
 import { Modal } from '@/shared/components/Modal';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { ProducaoAcademica, TipoProducaoAcademica } from '@/shared/types';
-
-const tiposProducao: { value: TipoProducaoAcademica; label: string }[] = [
-  { value: 'dissertacao', label: 'Dissertação' },
-  { value: 'tese', label: 'Tese' },
-  { value: 'artigo', label: 'Artigo' },
-  { value: 'tcc', label: 'TCC' },
-  { value: 'livro', label: 'Livro' },
-  { value: 'capitulo', label: 'Capítulo de livro' },
-  { value: 'outro', label: 'Outro' },
-];
 
 interface AcademicProductionFormModalProps {
   isOpen: boolean;
@@ -31,6 +21,19 @@ export function AcademicProductionFormModal({
 }: AcademicProductionFormModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
+  const tiposProducao: { value: TipoProducaoAcademica; label: string }[] = [
+    'dissertacao',
+    'tese',
+    'artigo',
+    'tcc',
+    'livro',
+    'capitulo',
+    'outro',
+  ].map((value, index) => ({
+    value: value as TipoProducaoAcademica,
+    label: t.academic.types[index + 1],
+  }));
   const isEdit = Boolean(producao);
 
   const [titulo, setTitulo] = useState('');
@@ -97,14 +100,11 @@ export function AcademicProductionFormModal({
         : adminApi.createProducaoAcademica(buildFormData()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['producoes-academicas'] });
-      toast(
-        producao ? 'Produção atualizada com sucesso.' : 'Produção criada com sucesso.',
-        'success'
-      );
+      toast(t.admin.saveSuccess.replace('{entity}', t.navigation.academic), 'success');
       onClose();
     },
     onError: () => {
-      toast('Não foi possível salvar a produção acadêmica. Tente novamente.', 'error');
+      toast(t.admin.saveFailed, 'error');
     },
   });
 
@@ -118,27 +118,31 @@ export function AcademicProductionFormModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Editar produção acadêmica' : 'Nova produção acadêmica'}
+      title={
+        isEdit
+          ? `${t.common.edit} ${t.navigation.academic.toLowerCase()}`
+          : `${t.admin.new} ${t.navigation.academic.toLowerCase()}`
+      }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            {ptBR.common.cancel}
+            {t.common.cancel}
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            isLoading={saveMutation.isPending}
-          >
-            {ptBR.common.save}
+          <Button variant="primary" onClick={handleSubmit} isLoading={saveMutation.isPending}>
+            {t.common.save}
           </Button>
         </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Título *" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+        <Input
+          label={`${t.admin.title} *`}
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+        />
         <div>
           <label htmlFor="tipo" className="label">
-            Tipo *
+            {t.admin.type} *
           </label>
           <select
             id="tipo"
@@ -153,17 +157,25 @@ export function AcademicProductionFormModal({
             ))}
           </select>
         </div>
-        <Input label="Autor *" value={autor} onChange={(e) => setAutor(e.target.value)} />
-        <Input label="Orientador" value={orientador} onChange={(e) => setOrientador(e.target.value)} />
         <Input
-          label="Ano *"
+          label={`${t.academic.author} *`}
+          value={autor}
+          onChange={(e) => setAutor(e.target.value)}
+        />
+        <Input
+          label={t.academic.advisor}
+          value={orientador}
+          onChange={(e) => setOrientador(e.target.value)}
+        />
+        <Input
+          label={`${t.academic.year} *`}
           type="number"
           value={String(ano)}
           onChange={(e) => setAno(Number(e.target.value))}
         />
         <div>
           <label htmlFor="resumo" className="label">
-            Resumo
+            {t.admin.form.summary}
           </label>
           <textarea
             id="resumo"
@@ -173,19 +185,19 @@ export function AcademicProductionFormModal({
           />
         </div>
         <Input
-          label="Palavras-chave"
+          label={t.academic.keywords}
           value={palavrasChave}
           onChange={(e) => setPalavrasChave(e.target.value)}
         />
         <Input
-          label="URL de acesso"
+          label={t.academic.access}
           type="url"
           value={urlAcesso}
           onChange={(e) => setUrlAcesso(e.target.value)}
         />
         <div>
           <label htmlFor="citacaoAbnt" className="label">
-            Citação ABNT
+            {t.academic.citation}
           </label>
           <textarea
             id="citacaoAbnt"
@@ -196,7 +208,7 @@ export function AcademicProductionFormModal({
         </div>
         <div>
           <label htmlFor="arquivo" className="label">
-            Arquivo PDF
+            {t.admin.form.digitalFile}
           </label>
           <input
             id="arquivo"
@@ -205,17 +217,11 @@ export function AcademicProductionFormModal({
             onChange={(e) => setArquivo(e.target.files?.[0] || null)}
             className="input"
           />
-          {arquivo && (
-            <p className="mt-1 text-sm text-[var(--color-text-muted)]">{arquivo.name}</p>
-          )}
+          {arquivo && <p className="mt-1 text-sm text-[var(--color-text-muted)]">{arquivo.name}</p>}
         </div>
         <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={ativo}
-            onChange={(e) => setAtivo(e.target.checked)}
-          />
-          <span className="text-sm">Ativo</span>
+          <input type="checkbox" checked={ativo} onChange={(e) => setAtivo(e.target.checked)} />
+          <span className="text-sm">{t.admin.active}</span>
         </label>
       </form>
     </Modal>

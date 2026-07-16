@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { DocumentCard } from './DocumentCard';
 import { Documento } from '@/shared/types';
+import { LocaleProvider } from '@/shared/i18n';
 
 const mockDocumento: Documento = {
   id: '1',
@@ -19,9 +20,11 @@ const mockDocumento: Documento = {
 };
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-    {children}
-  </MemoryRouter>
+  <LocaleProvider>
+    <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+      {children}
+    </MemoryRouter>
+  </LocaleProvider>
 );
 
 describe('DocumentCard', () => {

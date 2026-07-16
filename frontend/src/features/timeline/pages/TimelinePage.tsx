@@ -11,7 +11,7 @@ import { CreateButton } from '@/features/admin/components/CreateButton';
 import { EditButton } from '@/features/admin/components/EditButton';
 import { TimelineEventFormModal } from '@/features/admin/components/TimelineEventFormModal';
 import { TimelineCard } from '@/features/timeline/components/TimelineCard';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { TimelineEvent } from '@/shared/types';
 
 function getDecade(event: TimelineEvent): string {
@@ -29,6 +29,7 @@ function sortEvents(events: TimelineEvent[]): TimelineEvent[] {
 }
 
 export function TimelinePage() {
+  const { t } = useLocale();
   const { data: events, isLoading, error, refetch } = useTimeline();
   const { canEdit } = useEditable();
   const [timelineModalOpen, setTimelineModalOpen] = useState(false);
@@ -52,18 +53,20 @@ export function TimelinePage() {
 
   return (
     <>
-      <SEO title={ptBR.timeline.title} />
+      <SEO title={t.timeline.title} />
       <main id="main-content">
         <Section ariaLabelledby="timeline-title">
-          <Breadcrumb items={[{ label: ptBR.navigation.timeline }]} className="mb-6" />
+          <Breadcrumb items={[{ label: t.navigation.timeline }]} className="mb-6" />
 
           <SectionHeader
-            title={ptBR.timeline.title}
+            title={t.timeline.title}
             titleId="timeline-title"
-            subtitle={ptBR.timeline.subtitle}
+            subtitle={t.timeline.subtitle}
             centered
             action={
-              canEdit ? <CreateButton onClick={openTimelineCreate} label="Evento" /> : undefined
+              canEdit ? (
+                <CreateButton onClick={openTimelineCreate} label={t.home.eventCreate} />
+              ) : undefined
             }
           />
 
@@ -80,16 +83,13 @@ export function TimelinePage() {
           {error && <ErrorMessage onRetry={refetch} />}
 
           {!isLoading && sortedEvents.length === 0 && (
-            <EmptyState
-              title="Nenhum evento na linha do tempo"
-              description="Os marcos históricos cadastrados aparecerão aqui."
-            />
+            <EmptyState title={t.timeline.emptyTitle} description={t.home.noTimelineDescription} />
           )}
 
           {!isLoading && sortedEvents.length > 0 && (
             <>
               <nav
-                aria-label="Navegar por década"
+                aria-label={t.timeline.navigateByDecade}
                 className="mb-10 flex flex-wrap justify-center gap-2"
               >
                 {decades.map((decade) => (
@@ -138,7 +138,10 @@ export function TimelinePage() {
                       <div className="relative h-full pl-10 md:pl-0">
                         {canEdit && (
                           <div className={`absolute -top-2 ${isLeft ? 'right-0' : 'left-0'}`}>
-                            <EditButton onClick={() => openTimelineEdit(event)} label="Editar" />
+                            <EditButton
+                              onClick={() => openTimelineEdit(event)}
+                              label={t.admin.edit}
+                            />
                           </div>
                         )}
                         <TimelineCard event={event} showImage showDocumentLink className="h-full" />

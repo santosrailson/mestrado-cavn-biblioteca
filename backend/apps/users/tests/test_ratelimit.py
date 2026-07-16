@@ -1,5 +1,5 @@
 import pytest
-from django.core.cache import cache
+from django.core.cache import cache, caches
 from rest_framework.test import APIClient
 
 from apps.core.constants import UserRole
@@ -16,6 +16,7 @@ def api_client():
 def _clear_cache():
     """Limpa o cache antes de cada teste para não acumular requisições."""
     cache.clear()
+    caches["axes"].clear()
 
 
 @pytest.mark.django_db
@@ -42,7 +43,7 @@ def test_login_rate_limit_returns_429_after_excess(api_client):
 def test_twofactor_login_rate_limit_returns_429(api_client):
     user = UserFactory(role=UserRole.ADMINISTRATOR)
     url = "/api/v1/auth/2fa/login/"
-    payload = {"user_id": str(user.pk), "token": "000000"}
+    payload = {"twofactor_challenge": "invalid", "token": "000000"}
 
     for _ in range(5):
         response = api_client.post(url, payload)

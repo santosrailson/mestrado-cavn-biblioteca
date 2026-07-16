@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useId, useRef } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 
 interface ModalProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }: ModalProps) {
+  const { t } = useOptionalLocale();
   const titleId = useId();
   const overlayRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -89,7 +90,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = 'md' }:
             variant="ghost"
             size="sm"
             onClick={onClose}
-            aria-label={ptBR.common.close}
+            aria-label={t.common.close}
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </Button>

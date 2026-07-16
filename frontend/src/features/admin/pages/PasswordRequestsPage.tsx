@@ -4,23 +4,22 @@ import { SectionHeader } from '@/shared/components/Section';
 import { Breadcrumb } from '@/shared/components/Breadcrumb';
 import { useToast } from '@/shared/hooks/useToast';
 import adminApi from '../api/adminApi';
+import { useLocale } from '@/shared/i18n';
 
-const PERFIL_LABEL: Record<string, string> = {
-  catalogador: 'Catalogador',
-  curador: 'Curador',
-  administrador: 'Administrador',
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+function formatDate(iso: string, locale: string) {
+  return new Date(iso).toLocaleString(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
 export function PasswordRequestsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { locale, t } = useLocale();
 
   const { data: solicitacoes = [], isLoading } = useQuery({
     queryKey: ['solicitacoes-senha'],
@@ -31,27 +30,27 @@ export function PasswordRequestsPage() {
     mutationFn: (id: string) => adminApi.aprovarSolicitacaoSenha(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solicitacoes-senha'] });
-      toast('Senha alterada com sucesso.', 'success');
+      toast(t.admin.passwordChanged, 'success');
     },
-    onError: () => toast('Erro ao aprovar solicitação.', 'error'),
+    onError: () => toast(t.admin.passwordRequestError, 'error'),
   });
 
   const rejeitar = useMutation({
     mutationFn: (id: string) => adminApi.rejeitarSolicitacaoSenha(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['solicitacoes-senha'] });
-      toast('Solicitação rejeitada.', 'info');
+      toast(t.admin.rejectedPasswordMessage, 'info');
     },
-    onError: () => toast('Erro ao rejeitar solicitação.', 'error'),
+    onError: () => toast(t.admin.passwordRequestError, 'error'),
   });
 
   return (
     <>
-      <Breadcrumb items={[{ label: 'Solicitações de senha' }]} className="mb-6" />
+      <Breadcrumb items={[{ label: t.admin.passwordRequests }]} className="mb-6" />
       <SectionHeader
-        title="Solicitações de senha"
+        title={t.admin.passwordRequests}
         titleId="pwd-requests-title"
-        subtitle="Usuários que solicitaram alteração de senha aguardando aprovação"
+        subtitle={t.admin.pendingPasswordDescription}
       />
 
       {isLoading ? (
@@ -63,17 +62,17 @@ export function PasswordRequestsPage() {
       ) : solicitacoes.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-surface py-16 text-center">
           <KeyRound className="mb-3 h-10 w-10 text-text-muted" aria-hidden="true" />
-          <p className="text-sm text-text-muted">Nenhuma solicitação pendente.</p>
+          <p className="text-sm text-text-muted">{t.admin.noPendingPasswordRequests}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-sm">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-surface-alt text-left text-xs font-semibold uppercase tracking-wider text-text-muted">
-                <th className="px-4 py-3">Usuário</th>
-                <th className="px-4 py-3">Perfil</th>
-                <th className="px-4 py-3">Solicitado em</th>
-                <th className="px-4 py-3 text-right">Ações</th>
+                <th className="px-4 py-3">{t.admin.user}</th>
+                <th className="px-4 py-3">{t.admin.profile}</th>
+                <th className="px-4 py-3">{t.admin.requestedAt}</th>
+                <th className="px-4 py-3 text-right">{t.admin.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -84,9 +83,9 @@ export function PasswordRequestsPage() {
                     <p className="text-xs text-text-muted">{sol.usuarioEmail}</p>
                   </td>
                   <td className="px-4 py-3 text-text-muted">
-                    {PERFIL_LABEL[sol.usuarioPerfil] ?? sol.usuarioPerfil}
+                    {t.admin.profiles[sol.usuarioPerfil] ?? sol.usuarioPerfil}
                   </td>
-                  <td className="px-4 py-3 text-text-muted">{formatDate(sol.criadoEm)}</td>
+                  <td className="px-4 py-3 text-text-muted">{formatDate(sol.criadoEm, locale)}</td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
                       <button
@@ -94,10 +93,10 @@ export function PasswordRequestsPage() {
                         onClick={() => aprovar.mutate(sol.id)}
                         disabled={aprovar.isPending || rejeitar.isPending}
                         className="inline-flex items-center gap-1.5 rounded-md bg-success-bg px-3 py-1.5 text-xs font-medium text-success hover:opacity-80 disabled:opacity-50"
-                        title="Aprovar — a senha do usuário será alterada imediatamente"
+                        title={t.admin.workflow.approve}
                       >
                         <Check className="h-3.5 w-3.5" />
-                        Aprovar
+                        {t.admin.workflow.approve}
                       </button>
                       <button
                         type="button"
@@ -106,7 +105,7 @@ export function PasswordRequestsPage() {
                         className="inline-flex items-center gap-1.5 rounded-md bg-danger-bg px-3 py-1.5 text-xs font-medium text-danger hover:opacity-80 disabled:opacity-50"
                       >
                         <X className="h-3.5 w-3.5" />
-                        Rejeitar
+                        {t.admin.workflow.reject}
                       </button>
                     </div>
                   </td>

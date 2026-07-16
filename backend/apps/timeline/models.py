@@ -47,7 +47,9 @@ class TimelineEvent(BaseModel):
         verbose_name_plural = _("Eventos da linha do tempo")
         ordering = ["data_evento", "ordem", "-created_at"]
         indexes = [
-            models.Index(fields=["data_evento", "ordem", "-created_at"], name="timeline_event_order_idx"),
+            models.Index(
+                fields=["data_evento", "ordem", "-created_at"], name="timeline_event_order_idx"
+            ),
             models.Index(fields=["destaque"], name="timeline_event_destaque_idx"),
             models.Index(fields=["documento"], name="timeline_event_documento_idx"),
         ]

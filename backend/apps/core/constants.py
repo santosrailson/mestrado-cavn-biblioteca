@@ -43,6 +43,15 @@ class ProcessingStatus(models.TextChoices):
     FAILED = "falhou", _("Falhou")
 
 
+class AntivirusStatus(models.TextChoices):
+    PENDING = "pendente", _("Pendente")
+    SCANNING = "escaneando", _("Escaneando")
+    CLEAN = "limpo", _("Limpo")
+    INFECTED = "infectado", _("Infectado")
+    UNAVAILABLE = "indisponivel", _("Indisponível")
+    SKIPPED = "ignorado", _("Ignorado")
+
+
 class AuditAction(models.TextChoices):
     CREATE = "criar", _("Criar")
     UPDATE = "atualizar", _("Atualizar")

@@ -11,12 +11,19 @@ import { useToast } from '@/shared/hooks/useToast';
 import { getSettingMeta, GROUP_ORDER } from '@/shared/lib/settingsLabels';
 import { SYSTEM_CONFIG_KEY } from '@/shared/hooks/useSystemConfig';
 import { Configuracao } from '@/shared/types';
+import { useLocale } from '@/shared/i18n';
 
 export function SettingsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
 
-  const { data: settings, isLoading, error, refetch } = useQuery({
+  const {
+    data: settings,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['admin-settings'],
     queryFn: adminApi.settings,
     staleTime: Infinity,
@@ -61,9 +68,17 @@ export function SettingsPage() {
   if (isLoading) {
     return (
       <>
-        <Breadcrumb items={[{ label: 'Configurações' }]} className="mb-6" />
-        <SectionHeader title="Configurações do site" titleId="settings-title" subtitle="Gerencie a identidade, aparência e comportamento do repositório" />
-        <div className="grid gap-6">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}</div>
+        <Breadcrumb items={[{ label: t.admin.settings }]} className="mb-6" />
+        <SectionHeader
+          title={t.settings.title}
+          titleId="settings-title"
+          subtitle={t.settings.subtitle}
+        />
+        <div className="grid gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-40 w-full" />
+          ))}
+        </div>
       </>
     );
   }
@@ -71,7 +86,7 @@ export function SettingsPage() {
   if (error) {
     return (
       <>
-        <Breadcrumb items={[{ label: 'Configurações' }]} className="mb-6" />
+        <Breadcrumb items={[{ label: t.admin.settings }]} className="mb-6" />
         <ErrorMessage onRetry={refetch} />
       </>
     );
@@ -80,8 +95,8 @@ export function SettingsPage() {
   if (!settings || settings.length === 0) {
     return (
       <>
-        <Breadcrumb items={[{ label: 'Configurações' }]} className="mb-6" />
-        <p className="text-sm text-[var(--color-text-muted)]">Nenhuma configuração cadastrada.</p>
+        <Breadcrumb items={[{ label: t.admin.settings }]} className="mb-6" />
+        <p className="text-sm text-[var(--color-text-muted)]">{t.admin.noSettings}</p>
       </>
     );
   }
@@ -103,7 +118,9 @@ export function SettingsPage() {
   const discardGroup = (group: string) => {
     setDraft((prev) => {
       const next = { ...prev };
-      grouped[group]?.forEach((s) => { next[s.chave] = serverValue(s.chave); });
+      grouped[group]?.forEach((s) => {
+        next[s.chave] = serverValue(s.chave);
+      });
       return next;
     });
   };
@@ -128,7 +145,9 @@ export function SettingsPage() {
       // evitando que o campo fique marcado como alteração pendente.
       setDraft((prev) => {
         const next = { ...prev };
-        results.forEach((r) => { next[r.chave] = r.valor; });
+        results.forEach((r) => {
+          next[r.chave] = r.valor;
+        });
         return next;
       });
       lastServerRef.current = allUpdated;
@@ -140,9 +159,13 @@ export function SettingsPage() {
         }
       });
 
-      toast(`${changed.length === 1 ? 'Configuração salva' : `${changed.length} configurações salvas`} com sucesso`, 'success');
+      const entity =
+        changed.length === 1
+          ? t.admin.settings.toLowerCase()
+          : `${changed.length} ${t.admin.settings.toLowerCase()}`;
+      toast(t.admin.saveSuccess.replace('{entity}', entity), 'success');
     } catch {
-      toast('Erro ao salvar. Tente novamente.', 'error');
+      toast(t.admin.saveFailed, 'error');
     } finally {
       setSaving((prev) => ({ ...prev, [group]: false }));
     }
@@ -150,11 +173,11 @@ export function SettingsPage() {
 
   return (
     <>
-      <Breadcrumb items={[{ label: 'Configurações' }]} className="mb-6" />
+      <Breadcrumb items={[{ label: t.admin.settings }]} className="mb-6" />
       <SectionHeader
-        title="Configurações do site"
+        title={t.settings.title}
         titleId="settings-title"
-        subtitle="Gerencie a identidade, aparência e comportamento do repositório"
+        subtitle={t.settings.subtitle}
       />
 
       <div className="grid gap-10">
@@ -166,20 +189,35 @@ export function SettingsPage() {
             <section key={group}>
               <div className="mb-4 flex items-center justify-between border-b border-border pb-3">
                 <h2 className="text-lg font-semibold text-slate-700">
-                  {group}
+                  {t.settings.groups[group as keyof typeof t.settings.groups] ?? group}
                   {dirty && (
                     <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                      alterações pendentes
+                      {t.settings.pendingChanges}
                     </span>
                   )}
                 </h2>
                 {dirty && (
                   <div className="flex gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => discardGroup(group)} disabled={isSaving}>
-                      Descartar
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => discardGroup(group)}
+                      disabled={isSaving}
+                    >
+                      {t.admin.discard}
                     </Button>
-                    <Button variant="primary" size="sm" onClick={() => saveGroup(group)} isLoading={isSaving}>
-                      Salvar {group.toLowerCase()}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => saveGroup(group)}
+                      isLoading={isSaving}
+                    >
+                      {t.admin.saveGroup.replace(
+                        '{group}',
+                        (
+                          t.settings.groups[group as keyof typeof t.settings.groups] ?? group
+                        ).toLowerCase()
+                      )}
                     </Button>
                   </div>
                 )}
@@ -188,7 +226,8 @@ export function SettingsPage() {
               <div className="grid gap-4">
                 {items.map((setting) => {
                   const meta = getSettingMeta(setting.chave);
-                  const inputType = meta.inputType ?? (setting.tipo === 'boolean' ? 'boolean' : 'text');
+                  const inputType =
+                    meta.inputType ?? (setting.tipo === 'boolean' ? 'boolean' : 'text');
                   const value = draft[setting.chave] ?? '';
                   const changed = isDirty(setting.chave);
 
@@ -198,11 +237,14 @@ export function SettingsPage() {
                       className={changed ? 'border-amber-300 bg-amber-50/40' : ''}
                     >
                       <label htmlFor={`setting-${setting.chave}`} className="label">
-                        {meta.label}
+                        {t.settings.labels[setting.chave as keyof typeof t.settings.labels] ??
+                          meta.label}
                         {changed && <span className="ml-1 text-amber-600">*</span>}
                       </label>
                       {setting.descricao && (
-                        <p className="mb-2 text-xs text-[var(--color-text-muted)]">{setting.descricao}</p>
+                        <p className="mb-2 text-xs text-[var(--color-text-muted)]">
+                          {setting.descricao}
+                        </p>
                       )}
 
                       {inputType === 'boolean' ? (
@@ -212,8 +254,8 @@ export function SettingsPage() {
                           onChange={(e) => updateDraft(setting.chave, e.target.value)}
                           className="input max-w-xs"
                         >
-                          <option value="true">Ativado</option>
-                          <option value="false">Desativado</option>
+                          <option value="true">{t.admin.enabled}</option>
+                          <option value="false">{t.admin.disabled}</option>
                         </select>
                       ) : inputType === 'color' ? (
                         <div className="flex items-center gap-3">
@@ -238,7 +280,8 @@ export function SettingsPage() {
                           />
                           {changed && (
                             <span className="text-xs text-[var(--color-text-muted)]">
-                              anterior: <span className="font-mono">{serverValue(setting.chave)}</span>
+                              {t.settings.previous}:{' '}
+                              <span className="font-mono">{serverValue(setting.chave)}</span>
                             </span>
                           )}
                         </div>

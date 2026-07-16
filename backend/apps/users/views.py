@@ -9,7 +9,6 @@ from django.conf import settings
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.utils import timezone
-from django_otp.plugins.otp_totp.models import TOTPDevice
 from rest_framework import generics, mixins, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -21,11 +20,17 @@ from apps.documents.models import Document
 from apps.users.models import PrivacyRequest, User
 from apps.users.permissions import IsAdministrator, IsOwnerOrAdministrator
 from apps.users.ratelimit import RateLimitedMixin, drf_ratelimit
+from apps.users.security import revoke_user_sessions
 from apps.users.serializers import (
     PrivacyRequestSerializer,
     UserCreateSerializer,
     UserSerializer,
     UserUpdateSerializer,
+)
+from apps.users.twofactor import (
+    has_confirmed_twofactor,
+    issue_enrollment_token,
+    issue_twofactor_challenge,
 )
 
 _COOKIE_SECURE = getattr(settings, "SESSION_COOKIE_SECURE", False)
@@ -111,18 +116,25 @@ class CustomTokenObtainPairView(RateLimitedMixin, TokenObtainPairView):
 
         if success:
             user = User.objects.filter(email=request.data.get("email")).first()
-            # 2FA obrigatório para qualquer usuário privilegiado (catalogador, curador, admin)
-            # que já tenha um dispositivo 2FA configurado.
+            # Perfis privilegiados não recebem JWT até concluir o 2FA obrigatório.
             if user and user.can_catalogue():
-                has_2fa = TOTPDevice.objects.filter(user=user, confirmed=True).exists()
+                has_2fa = has_confirmed_twofactor(user)
+                if getattr(settings, "MANDATORY_2FA_FOR_PRIVILEGED", False) and not has_2fa:
+                    return Response(
+                        {
+                            "twofactor_setup_required": True,
+                            "enrollment_token": issue_enrollment_token(user),
+                            "user_id": str(user.pk),
+                            "email": user.email,
+                        },
+                        status=status.HTTP_200_OK,
+                    )
                 if has_2fa:
-                    response.data["twofactor_required"] = True
-                    response.data["user_id"] = str(user.pk)
                     # Não emite tokens JWT — o frontend precisa do token 2FA primeiro
                     return Response(
                         {
                             "twofactor_required": True,
-                            "user_id": str(user.pk),
+                            "twofactor_challenge": issue_twofactor_challenge(user),
                             "email": user.email,
                         },
                         status=status.HTTP_200_OK,
@@ -193,6 +205,7 @@ def logout_view(request):
             pass
 
     if request.user and request.user.is_authenticated:
+        revoke_user_sessions(request.user)
         AuditoriaService.registrar(
             usuario=request.user,
             acao="logout",
@@ -262,13 +275,17 @@ class PrivacyRequestListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        queryset = PrivacyRequest.objects.select_related("usuario")
+        queryset = PrivacyRequest.objects.select_related("usuario", "responsavel", "resolvido_por")
         if self.request.user.is_administrator:
             return queryset
         return queryset.filter(usuario=self.request.user)
 
     def perform_create(self, serializer):
-        request = serializer.save(usuario=self.request.user)
+        request = serializer.save(
+            usuario=self.request.user,
+            prazo_em=timezone.now()
+            + timezone.timedelta(days=getattr(settings, "PRIVACY_REQUEST_SLA_DAYS", 15)),
+        )
         AuditoriaService.registrar(
             usuario=self.request.user,
             acao="criar",
@@ -284,7 +301,7 @@ class PrivacyRequestDetailView(generics.RetrieveUpdateAPIView):
 
     serializer_class = PrivacyRequestSerializer
     permission_classes = [IsAuthenticated]
-    queryset = PrivacyRequest.objects.select_related("usuario")
+    queryset = PrivacyRequest.objects.select_related("usuario", "responsavel", "resolvido_por")
     http_method_names = ["get", "patch", "head", "options"]
 
     def get_queryset(self):
@@ -299,7 +316,11 @@ class PrivacyRequestDetailView(generics.RetrieveUpdateAPIView):
                 {"detail": "Apenas administradores podem atualizar uma solicitação."}, status=403
             )
         instance = self.get_object()
-        allowed = {key: request.data[key] for key in ("status", "resposta") if key in request.data}
+        allowed = {
+            key: request.data[key]
+            for key in ("status", "resposta", "base_legal", "responsavel", "decisao_motivo")
+            if key in request.data
+        }
         if not allowed:
             return Response({"detail": "Informe status ou resposta."}, status=400)
         if "status" in allowed and allowed["status"] not in PrivacyRequest.Status.values:
@@ -308,6 +329,15 @@ class PrivacyRequestDetailView(generics.RetrieveUpdateAPIView):
             instance.status = allowed["status"]
         if "resposta" in allowed:
             instance.resposta = str(allowed["resposta"])[:4000]
+        if "base_legal" in allowed:
+            instance.base_legal = str(allowed["base_legal"])[:160]
+        if "decisao_motivo" in allowed:
+            instance.decisao_motivo = str(allowed["decisao_motivo"])[:4000]
+        if "responsavel" in allowed:
+            try:
+                instance.responsavel = User.objects.get(pk=allowed["responsavel"], is_active=True)
+            except (User.DoesNotExist, TypeError, ValueError):
+                return Response({"detail": "Responsável inválido."}, status=400)
         if instance.status in {PrivacyRequest.Status.COMPLETED, PrivacyRequest.Status.REJECTED}:
             instance.resolvido_por = request.user
             instance.resolvido_em = timezone.now()
@@ -315,7 +345,16 @@ class PrivacyRequestDetailView(generics.RetrieveUpdateAPIView):
             instance.resolvido_por = None
             instance.resolvido_em = None
         instance.save(
-            update_fields=["status", "resposta", "resolvido_por", "resolvido_em", "atualizado_em"]
+            update_fields=[
+                "status",
+                "resposta",
+                "resolvido_por",
+                "resolvido_em",
+                "responsavel",
+                "base_legal",
+                "decisao_motivo",
+                "atualizado_em",
+            ]
         )
         AuditoriaService.registrar(
             usuario=request.user,

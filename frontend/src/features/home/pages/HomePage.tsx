@@ -30,11 +30,13 @@ import { Loading } from '@/shared/components/Loading';
 import { CategoryFormModal } from '@/features/admin/components/CategoryFormModal';
 import { TimelineEventFormModal } from '@/features/admin/components/TimelineEventFormModal';
 
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Categoria, TimelineEvent } from '@/shared/types';
 
 const DocumentFormModal = lazy(() =>
-  import('@/features/admin/components/DocumentFormModal').then((m) => ({ default: m.DocumentFormModal }))
+  import('@/features/admin/components/DocumentFormModal').then((m) => ({
+    default: m.DocumentFormModal,
+  }))
 );
 
 const categoryIcons: Record<string, React.ReactNode> = {
@@ -47,6 +49,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
 };
 
 export function HomePage() {
+  const { t } = useLocale();
   const {
     data: categories,
     isLoading: categoriesLoading,
@@ -109,22 +112,22 @@ export function HomePage() {
       <SEO />
       <main id="main-content">
         <Hero
-          title={ptBR.home.heroTitle}
-          subtitle={ptBR.home.heroSubtitle}
+          title={t.home.heroTitle}
+          subtitle={t.home.heroSubtitle}
           badge="CAVN/UFPB"
           showSearch
           actions={
             <>
               <Link to="/busca" className="btn-primary min-w-[180px]">
                 <Search className="h-5 w-5" aria-hidden="true" />
-                {ptBR.home.ctaSearch}
+                {t.home.ctaSearch}
               </Link>
               <Link
                 to="/linha-do-tempo"
                 className="btn-outline border-white text-white hover:bg-white/10 min-w-[180px]"
               >
                 <Clock className="h-5 w-5" aria-hidden="true" />
-                {ptBR.home.ctaTimeline}
+                {t.home.ctaTimeline}
               </Link>
             </>
           }
@@ -132,12 +135,14 @@ export function HomePage() {
 
         <Section ariaLabelledby="categories-title" id="categorias">
           <SectionHeader
-            title={ptBR.home.categoriesTitle}
+            title={t.home.categoriesTitle}
             titleId="categories-title"
-            subtitle="Navegue pelos principais grupos documentais do acervo"
+            subtitle={t.home.categoriesSubtitle}
             centered
             action={
-              canEdit ? <CreateButton onClick={openCategoryCreate} label="Categoria" /> : undefined
+              canEdit ? (
+                <CreateButton onClick={openCategoryCreate} label={t.home.categoryCreate} />
+              ) : undefined
             }
           />
 
@@ -145,8 +150,8 @@ export function HomePage() {
           {categoriesError && <ErrorMessage onRetry={refetchCategories} />}
           {categories && categories.length === 0 && (
             <EmptyState
-              title="Nenhuma categoria disponível"
-              description="As categorias do acervo aparecerão aqui."
+              title={t.home.noCategoriesTitle}
+              description={t.home.noCategoriesDescription}
             />
           )}
           {categories && categories.length > 0 && (
@@ -165,16 +170,20 @@ export function HomePage() {
                           <FolderArchive className="h-7 w-7" aria-hidden="true" />
                         )}
                       </div>
-                      <h3 className="mb-1 text-base font-semibold text-text">
-                        {category.nome}
-                      </h3>
+                      <h3 className="mb-1 text-base font-semibold text-text">{category.nome}</h3>
                       <p className="text-sm text-text-muted">
-                        {category.contagemDocumentos ?? 0} itens
+                        {t.common.itemCount.replace(
+                          '{count}',
+                          String(category.contagemDocumentos ?? 0)
+                        )}
                       </p>
                     </Link>
                     {canEdit && (
                       <div className="absolute right-2 top-2">
-                        <EditButton onClick={() => openCategoryEdit(category)} label="Editar" />
+                        <EditButton
+                          onClick={() => openCategoryEdit(category)}
+                          label={t.home.edit}
+                        />
                       </div>
                     )}
                   </li>
@@ -185,18 +194,20 @@ export function HomePage() {
 
         <Section variant="alt" ariaLabelledby="latest-docs-title">
           <SectionHeader
-            title={ptBR.home.latestDocumentsTitle}
+            title={t.home.latestDocumentsTitle}
             titleId="latest-docs-title"
-            subtitle="As novidades mais recentes do repositório"
+            subtitle={t.home.latestSubtitle}
             centered
             action={
               <>
-                {canEdit && <CreateButton onClick={openDocumentCreate} label="Documento" />}
+                {canEdit && (
+                  <CreateButton onClick={openDocumentCreate} label={t.home.documentCreate} />
+                )}
                 <Link
                   to="/busca"
                   className="hidden items-center gap-1 text-sm font-medium text-primary no-underline hover:text-primary/80 sm:inline-flex"
                 >
-                  {ptBR.home.seeAll}
+                  {t.home.seeAll}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
               </>
@@ -207,8 +218,8 @@ export function HomePage() {
           {docsError && <ErrorMessage onRetry={refetchDocuments} />}
           {latestDocuments && latestDocuments.dados.length === 0 && (
             <EmptyState
-              title="Nenhum documento ainda"
-              description="Os documentos publicados aparecerão aqui."
+              title={t.home.noDocumentsTitle}
+              description={t.home.noDocumentsDescription}
             />
           )}
           {latestDocuments && latestDocuments.dados.length > 0 && (
@@ -227,22 +238,21 @@ export function HomePage() {
 
         <Section ariaLabelledby="timeline-preview-title">
           <SectionHeader
-            title={ptBR.home.timelinePreviewTitle}
+            title={t.home.timelinePreviewTitle}
             titleId="timeline-preview-title"
-            subtitle="Momentos que marcaram a história do CAVN"
+            subtitle={t.home.timelineSubtitle}
             centered
             action={
-              canEdit ? <CreateButton onClick={openTimelineCreate} label="Evento" /> : undefined
+              canEdit ? (
+                <CreateButton onClick={openTimelineCreate} label={t.home.eventCreate} />
+              ) : undefined
             }
           />
 
           {timelineLoading && <SkeletonGrid count={4} columns={4} cover={false} />}
           {timelineError && <ErrorMessage onRetry={refetchTimeline} />}
           {timelineEvents && timelineEvents.length === 0 && (
-            <EmptyState
-              title="Nenhum marco histórico"
-              description="Os marcos históricos cadastrados aparecerão aqui."
-            />
+            <EmptyState title={t.home.noTimelineTitle} description={t.home.noTimelineDescription} />
           )}
           {timelineEvents && timelineEvents.length > 0 && (
             <div className="relative">
@@ -264,7 +274,7 @@ export function HomePage() {
                     <div className="flex h-full flex-col pl-12 md:pl-0 md:pt-8">
                       {canEdit && (
                         <div className="mb-2 md:flex md:justify-center">
-                          <EditButton onClick={() => openTimelineEdit(event)} label="Editar" />
+                          <EditButton onClick={() => openTimelineEdit(event)} label={t.home.edit} />
                         </div>
                       )}
                       <TimelineCard
@@ -282,7 +292,7 @@ export function HomePage() {
           <div className="mt-10 text-center">
             <Link to="/linha-do-tempo" className="btn-outline inline-flex">
               <Clock className="h-5 w-5" aria-hidden="true" />
-              {ptBR.home.ctaTimeline}
+              {t.home.ctaTimeline}
             </Link>
           </div>
         </Section>

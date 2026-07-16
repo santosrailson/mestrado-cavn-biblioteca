@@ -48,6 +48,14 @@ jobs:
           pip install -r requirements.txt
       - name: Lint com Ruff
         run: ruff check apps config
+      - name: Quality gates de configuração e contrato
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings_test
+          SECRET_KEY: test-secret-key-not-for-production
+        run: |
+          python manage.py makemigrations --check --dry-run
+          python manage.py check --deploy
+          python manage.py spectacular --validate --file /tmp/cavn-openapi.yml
       - name: Type checking com mypy (não bloqueante nesta fase)
         continue-on-error: true
         run: mypy apps config

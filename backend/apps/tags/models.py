@@ -11,9 +11,7 @@ class Tag(SlugModel):
     """Tag livre associada a documentos."""
 
     nome = models.CharField(max_length=100, verbose_name=_("Nome"))
-    contagem_uso = models.PositiveIntegerField(
-        default=0, verbose_name=_("Contagem de uso")
-    )
+    contagem_uso = models.PositiveIntegerField(default=0, verbose_name=_("Contagem de uso"))
 
     class Meta:
         verbose_name = _("Tag")

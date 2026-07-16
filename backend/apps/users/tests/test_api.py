@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 
 from apps.core.constants import UserRole
 from apps.users.models import PrivacyRequest, User
+from apps.users.security import revoke_user_sessions
 
 
 @pytest.fixture
@@ -53,6 +54,7 @@ def test_titular_pode_registrar_e_listar_solicitacao_de_privacidade(api_client):
     listed = api_client.get("/api/v1/auth/privacy/requests/")
     assert listed.status_code == 200
     assert len(listed.data["results"]) == 1
+    assert listed.data["results"][0]["prazoEm"]
 
 
 @pytest.mark.django_db
@@ -69,6 +71,40 @@ def test_exportacao_de_privacidade_nao_expoe_senha(api_client):
     assert response.status_code == 200
     assert response["Content-Disposition"].endswith('"cavn-dados-pessoais.json"')
     assert "senha" not in response.json()["profile"]
+
+
+@pytest.mark.django_db
+def test_revogacao_de_sessoes_invalida_access_token_emitido(api_client):
+    user = User.objects.create_user(
+        email="revogacao@cavn.br",
+        username="revogacao",
+        password="senha123",
+    )
+    login = api_client.post("/api/v1/auth/login/", {"email": user.email, "password": "senha123"})
+    assert login.status_code == 200
+    access = login.data["access"]
+
+    revoke_user_sessions(user)
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
+    response = api_client.get("/api/v1/auth/me/")
+    assert response.status_code == 401
+
+
+@pytest.mark.django_db
+def test_revogacao_de_sessoes_invalida_refresh_token(api_client):
+    user = User.objects.create_user(
+        email="revogacao-refresh@cavn.br",
+        username="revogacao-refresh",
+        password="senha123",
+    )
+    login = api_client.post("/api/v1/auth/login/", {"email": user.email, "password": "senha123"})
+    assert login.status_code == 200
+
+    revoke_user_sessions(user)
+    api_client.cookies["cavn_refresh"] = login.data["refresh"]
+    response = api_client.post("/api/v1/auth/refresh/", {})
+
+    assert response.status_code == 401
 
 
 @pytest.mark.django_db

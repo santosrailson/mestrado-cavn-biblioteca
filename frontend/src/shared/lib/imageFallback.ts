@@ -21,11 +21,11 @@ export function getImageFallbackState(src?: string | null) {
   };
 }
 
-
 export function isGeneratedSeedCover(candidate?: ImageCandidate | null) {
   if (!candidate?.url) return false;
 
-  const filename = getFilename(candidate.url) || candidate.nomeOriginal || candidate.nomeArmazenado || '';
+  const filename =
+    getFilename(candidate.url) || candidate.nomeOriginal || candidate.nomeArmazenado || '';
   const hasSeedCoverName = /^capa-[a-z0-9-]+\.jpe?g$/i.test(filename);
   const hasSeedDimensions = candidate.largura === 800 && candidate.altura === 600;
   const hasSeedFileSize =
@@ -40,7 +40,9 @@ export function isGeneratedSeedCoverUrl(src?: string | null) {
   if (!src) return false;
 
   const filename = getFilename(src);
-  return /\/media\/documentos\/\d{4}\/\d{2}\//.test(src) && /^capa-[a-z0-9-]+\.jpe?g$/i.test(filename);
+  return (
+    /\/media\/documentos\/\d{4}\/\d{2}\//.test(src) && /^capa-[a-z0-9-]+\.jpe?g$/i.test(filename)
+  );
 }
 
 function getFilename(src: string) {

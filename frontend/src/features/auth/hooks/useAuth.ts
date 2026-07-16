@@ -10,14 +10,19 @@ interface LoginCredentials {
 }
 
 interface TwoFactorChallenge {
-  twofactorRequired: true;
-  userId: string;
+  twofactorRequired?: true;
+  twofactorSetupRequired?: true;
+  userId?: string;
   email: string;
+  enrollmentToken?: string;
+  twofactorChallenge?: string;
 }
 
-type LoginResponse = {
-  usuario: Usuario;
-} | TwoFactorChallenge;
+type LoginResponse =
+  | {
+      usuario: Usuario;
+    }
+  | TwoFactorChallenge;
 
 export function useAuth() {
   const { user, isAuthenticated, setAuth, logout, hasRole } = useAuthStoreWithSelectors();

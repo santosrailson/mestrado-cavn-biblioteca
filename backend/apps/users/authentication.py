@@ -1,5 +1,6 @@
 """Autenticação JWT via cookie httpOnly ou header Authorization."""
 
+from django.conf import settings
 from rest_framework import exceptions
 from rest_framework.authentication import CSRFCheck
 from rest_framework.permissions import SAFE_METHODS
@@ -31,7 +32,6 @@ class JWTCookieAuthentication(JWTAuthentication):
         raw_token = request.COOKIES.get("cavn_access")
         if raw_token is None:
             return None
-
         try:
             validated_token = self.get_validated_token(raw_token.encode())
             if request.method not in SAFE_METHODS:
@@ -42,6 +42,20 @@ class JWTCookieAuthentication(JWTAuthentication):
             # Requisições de escrita receberão 401 via verificação de permissão,
             # o que aciona o refresh de token no frontend.
             return None
+
+    def get_user(self, validated_token):
+        user = super().get_user(validated_token)
+        token_version = validated_token.get("token_version")
+        if token_version is None and getattr(settings, "REQUIRE_TOKEN_VERSION", False):
+            raise exceptions.AuthenticationFailed("Token precisa ser renovado.")
+        if token_version is not None:
+            try:
+                is_current = int(token_version) == int(user.auth_token_version)
+            except (TypeError, ValueError):
+                is_current = False
+            if not is_current:
+                raise exceptions.AuthenticationFailed("Sessão revogada.")
+        return user
 
     def enforce_csrf(self, request):
         """Exige CSRF para autenticação via cookie.

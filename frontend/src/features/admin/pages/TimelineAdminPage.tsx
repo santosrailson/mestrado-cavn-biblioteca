@@ -9,18 +9,9 @@ import { Card } from '@/shared/components/Card';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { formatTimelineDate } from '@/shared/lib/formatDate';
 import { TimelineEvent } from '@/shared/types';
-
-const PRECISION_OPTIONS = [
-  { value: 'dia', label: 'Dia' },
-  { value: 'mes', label: 'Mês' },
-  { value: 'ano', label: 'Ano' },
-  { value: 'decada', label: 'Década' },
-  { value: 'seculo', label: 'Século' },
-  { value: 'desconhecida', label: 'Desconhecida' },
-];
 
 export function TimelineAdminPage() {
   const [showModal, setShowModal] = useState(false);
@@ -45,6 +36,10 @@ export function TimelineAdminPage() {
     destaque: false,
   });
   const queryClient = useQueryClient();
+  const { t } = useLocale();
+  const precisionOptions = ['dia', 'mes', 'ano', 'decada', 'seculo', 'desconhecida'].map(
+    (value, index) => ({ value, label: t.admin.form.datePrecisions[index] })
+  );
 
   const {
     data: events,
@@ -141,10 +136,10 @@ export function TimelineAdminPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{ptBR.admin.timeline}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t.admin.timeline}</h1>
         <Button variant="primary" onClick={openCreate}>
           <Plus className="h-4 w-4" aria-hidden="true" />
-          {ptBR.common.create}
+          {t.common.create}
         </Button>
       </div>
 
@@ -152,10 +147,10 @@ export function TimelineAdminPage() {
         <table className="w-full text-sm">
           <thead className="bg-[var(--color-surface)] text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">Título</th>
-              <th className="px-4 py-3 font-semibold">Data</th>
-              <th className="px-4 py-3 font-semibold">Destaque</th>
-              <th className="px-4 py-3 font-semibold">Ações</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.title}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.date}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.featured}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-border)]">
@@ -165,22 +160,24 @@ export function TimelineAdminPage() {
                 <td className="px-4 py-3">
                   {formatTimelineDate(event.dataEvento, event.dataPrecisao)}
                 </td>
-                <td className="px-4 py-3">{event.destaque ? 'Sim' : 'Não'}</td>
+                <td className="px-4 py-3">{event.destaque ? t.common.yes : t.common.no}</td>
                 <td className="px-4 py-3">
                   <div className="flex gap-1">
                     <button
                       type="button"
                       onClick={() => openEdit(event)}
                       className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                      aria-label={t.common.edit}
                     >
                       <Edit className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm('Deseja excluir este evento?')) deleteMutation.mutate(event.id);
+                        if (confirm(t.admin.deleteConfirm)) deleteMutation.mutate(event.id);
                       }}
                       className="rounded p-1.5 text-red-600 hover:bg-red-50"
+                      aria-label={t.common.delete}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -195,27 +192,31 @@ export function TimelineAdminPage() {
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={editing ? 'Editar evento' : 'Novo evento'}
+        title={
+          editing
+            ? `${t.common.edit} ${t.admin.timeline.toLowerCase()}`
+            : `${t.admin.new} ${t.admin.timeline.toLowerCase()}`
+        }
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={closeModal}>
-              {ptBR.common.cancel}
+              {t.common.cancel}
             </Button>
             <Button variant="primary" onClick={handleSubmit} isLoading={saveMutation.isPending}>
-              {ptBR.common.save}
+              {t.common.save}
             </Button>
           </div>
         }
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Título *"
+            label={`${t.admin.title} *`}
             value={form.titulo}
             onChange={(e) => setForm({ ...form, titulo: e.target.value })}
           />
           <div>
             <label htmlFor="event-desc" className="label">
-              Descrição
+              {t.admin.categoryDescription}
             </label>
             <textarea
               id="event-desc"
@@ -225,13 +226,13 @@ export function TimelineAdminPage() {
             />
           </div>
           <DateInput
-            label="Data *"
+            label={`${t.admin.date} *`}
             value={form.dataEvento}
             onChange={(e) => setForm({ ...form, dataEvento: e.target.value })}
           />
           <div>
             <label htmlFor="event-precision" className="label">
-              Precisão
+              {t.admin.precision}
             </label>
             <select
               id="event-precision"
@@ -239,7 +240,7 @@ export function TimelineAdminPage() {
               onChange={(e) => setForm({ ...form, dataPrecisao: e.target.value })}
               className="input"
             >
-              {PRECISION_OPTIONS.map((opt) => (
+              {precisionOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -248,7 +249,7 @@ export function TimelineAdminPage() {
           </div>
           <div>
             <label htmlFor="event-document" className="label">
-              Documento relacionado
+              {t.admin.relatedDocument}
             </label>
             <select
               id="event-document"
@@ -256,7 +257,7 @@ export function TimelineAdminPage() {
               onChange={(e) => setForm({ ...form, documentoId: e.target.value })}
               className="input"
             >
-              <option value="">Nenhum</option>
+              <option value="">{t.admin.none}</option>
               {documents?.dados.map((doc) => (
                 <option key={doc.id} value={doc.id}>
                   {doc.titulo}
@@ -265,22 +266,20 @@ export function TimelineAdminPage() {
             </select>
           </div>
           <Input
-            label="Ordem"
+            label={t.admin.order}
             type="number"
             value={String(form.ordem)}
             onChange={(e) => setForm({ ...form, ordem: Number(e.target.value) })}
           />
           <div>
             <label htmlFor="event-image" className="label">
-              Imagem de destaque
+              {t.admin.featuredImage}
             </label>
             <input
               id="event-image"
               type="file"
               accept="image/*"
-              onChange={(e) =>
-                setForm({ ...form, imagemDestaque: e.target.files?.[0] || null })
-              }
+              onChange={(e) => setForm({ ...form, imagemDestaque: e.target.files?.[0] || null })}
               className="input"
             />
             {form.imagemDestaque && (
@@ -295,7 +294,7 @@ export function TimelineAdminPage() {
               checked={form.destaque}
               onChange={(e) => setForm({ ...form, destaque: e.target.checked })}
             />
-            <span className="text-sm">Destaque</span>
+            <span className="text-sm">{t.admin.featured}</span>
           </label>
         </form>
       </Modal>

@@ -19,10 +19,7 @@ class NoCacheAPIMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
 
-        if (
-            request.path.startswith("/api/v1/")
-            and request.method in self.MUTABLE_METHODS
-        ):
+        if request.path.startswith("/api/v1/") and request.method in self.MUTABLE_METHODS:
             response.headers.setdefault(
                 "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
             )
@@ -32,9 +29,7 @@ class NoCacheAPIMiddleware:
         return response
 
 
-request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar(
-    "request_id", default=""
-)
+request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="")
 
 
 class RequestIdMiddleware:

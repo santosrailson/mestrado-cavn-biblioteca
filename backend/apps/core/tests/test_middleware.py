@@ -15,7 +15,5 @@ class TestRequestIdMiddleware:
         assert len(response.headers["X-Request-ID"]) > 0
 
     def test_request_id_enviado_pelo_cliente_e_reaproveitado(self, api_client):
-        response = api_client.get(
-            "/api/v1/health/", HTTP_X_REQUEST_ID="id-fixo-do-cliente-123"
-        )
+        response = api_client.get("/api/v1/health/", HTTP_X_REQUEST_ID="id-fixo-do-cliente-123")
         assert response.headers["X-Request-ID"] == "id-fixo-do-cliente-123"

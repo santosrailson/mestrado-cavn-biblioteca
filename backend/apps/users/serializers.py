@@ -2,8 +2,44 @@
 
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import PrivacyRequest, User
+from apps.users.security import CavnRefreshToken, revoke_user_sessions
+
+
+class CavnTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Emite tokens com versão para revogação imediata de sessões."""
+
+    @classmethod
+    def get_token(cls, user):
+        return CavnRefreshToken.for_user(user)
+
+
+class CavnTokenRefreshSerializer(TokenRefreshSerializer):
+    """Impede renovar um refresh token depois da revogação da sessão."""
+
+    def validate(self, attrs):
+        try:
+            refresh = RefreshToken(attrs["refresh"])
+        except TokenError as exc:
+            raise InvalidToken({"detail": "Refresh token inválido."}) from exc
+        try:
+            user = User.objects.get(pk=refresh["user_id"], is_active=True)
+        except User.DoesNotExist as exc:
+            raise InvalidToken({"detail": "Usuário do token não encontrado."}) from exc
+        token_version = refresh.get("token_version")
+        try:
+            token_is_current = token_version is not None and int(token_version) == int(
+                user.auth_token_version
+            )
+        except (TypeError, ValueError):
+            token_is_current = False
+        if not token_is_current:
+            raise InvalidToken({"detail": "Refresh token revogado."})
+        return super().validate(attrs)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -129,6 +165,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         senha = validated_data.pop("password", None)
         if senha:
             instance.set_password(senha)
+            revoke_user_sessions(instance)
 
         return super().update(instance, validated_data)
 
@@ -141,6 +178,10 @@ class PrivacyRequestSerializer(serializers.ModelSerializer):
     criadoEm = serializers.DateTimeField(source="criado_em", read_only=True)
     atualizadoEm = serializers.DateTimeField(source="atualizado_em", read_only=True)
     resolvidoEm = serializers.DateTimeField(source="resolvido_em", read_only=True)
+    prazoEm = serializers.DateTimeField(source="prazo_em", read_only=True)
+    baseLegal = serializers.CharField(source="base_legal", read_only=True)
+    decisaoMotivo = serializers.CharField(source="decisao_motivo", read_only=True)
+    responsavelNome = serializers.SerializerMethodField(method_name="get_responsavel_nome")
 
     class Meta:
         model = PrivacyRequest
@@ -155,6 +196,10 @@ class PrivacyRequestSerializer(serializers.ModelSerializer):
             "criadoEm",
             "atualizadoEm",
             "resolvidoEm",
+            "prazoEm",
+            "baseLegal",
+            "decisaoMotivo",
+            "responsavelNome",
         ]
         read_only_fields = ["id", "status", "resposta", "criadoEm", "atualizadoEm", "resolvidoEm"]
 
@@ -165,3 +210,8 @@ class PrivacyRequestSerializer(serializers.ModelSerializer):
                 "Descreva a solicitação com pelo menos 10 caracteres."
             )
         return value
+
+    def get_responsavel_nome(self, obj):
+        if not obj.responsavel:
+            return None
+        return obj.responsavel.get_full_name() or obj.responsavel.email

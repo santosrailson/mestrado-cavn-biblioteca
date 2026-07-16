@@ -4,17 +4,20 @@ import calendar
 import logging
 from datetime import timedelta
 
+from django.conf import settings
 from django.core.cache import cache
 from django.db import connections
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
+from django.utils.crypto import constant_time_compare
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit.models import Auditoria
+from apps.core.metrics import snapshot
 from apps.core.models import AnalyticsEvent
 from apps.documents.models import Document
 from apps.users.models import User
@@ -55,19 +58,7 @@ class HealthCheckView(APIView):
     permission_classes = []
 
     def get(self, request):
-        checks = {}
-
-        try:
-            connections["default"].cursor()
-            checks["database"] = "ok"
-        except Exception:
-            checks["database"] = "erro"
-
-        try:
-            cache.set("health_check_probe", "1", timeout=5)
-            checks["cache"] = "ok"
-        except Exception:
-            checks["cache"] = "erro"
+        checks = _dependency_checks()
 
         saudavel = all(v == "ok" for v in checks.values())
         return Response(
@@ -78,6 +69,63 @@ class HealthCheckView(APIView):
             },
             status=status.HTTP_200_OK if saudavel else status.HTTP_503_SERVICE_UNAVAILABLE,
         )
+
+
+def _dependency_checks():
+    checks = {}
+
+    try:
+        connections["default"].cursor()
+        checks["database"] = "ok"
+    except Exception:
+        checks["database"] = "erro"
+
+    try:
+        cache.set("health_check_probe", "1", timeout=5)
+        checks["cache"] = "ok"
+    except Exception:
+        checks["cache"] = "erro"
+
+    return checks
+
+
+class LiveHealthCheckView(APIView):
+    """Liveness: confirma apenas que o processo HTTP está respondendo."""
+
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok", "service": "cavn-digital-backend"})
+
+
+class ReadyHealthCheckView(APIView):
+    """Readiness: confirma dependências necessárias para receber tráfego."""
+
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        checks = _dependency_checks()
+        ready = all(value == "ok" for value in checks.values())
+        return Response(
+            {"status": "ok" if ready else "erro", "checks": checks},
+            status=status.HTTP_200_OK if ready else status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+
+class MetricsView(APIView):
+    """Exibe métricas operacionais somente com token dedicado de monitoramento."""
+
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        configured_token = getattr(settings, "METRICS_TOKEN", "")
+        supplied_token = request.headers.get("X-Metrics-Token", "")
+        if not configured_token or not constant_time_compare(supplied_token, configured_token):
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(snapshot())
 
 
 class DashboardView(APIView):

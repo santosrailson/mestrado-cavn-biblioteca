@@ -14,7 +14,7 @@ import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { EmptyState } from '@/shared/components/EmptyState';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Usuario, PerfilUsuario } from '@/shared/types';
 import { clsx } from 'clsx';
 
@@ -36,6 +36,7 @@ export function UsersPage() {
   const [editing, setEditing] = useState<Usuario | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
 
   const {
     data: users,
@@ -78,11 +79,11 @@ export function UsersPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast(editing ? 'Usuário atualizado com sucesso.' : 'Usuário criado com sucesso.', 'success');
+      toast(t.admin.saveSuccess.replace('{entity}', t.admin.user.toLowerCase()), 'success');
       closeModal();
     },
     onError: (error) => {
-      toast(getErrorMessage(error, 'Não foi possível salvar o usuário. Tente novamente.'), 'error');
+      toast(getErrorMessage(error, t.admin.saveFailed), 'error');
     },
   });
 
@@ -91,13 +92,10 @@ export function UsersPage() {
       adminApi.toggleUserStatus(id, ativo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast('Status do usuário atualizado com sucesso.', 'success');
+      toast(t.admin.statusUpdated, 'success');
     },
     onError: (error) => {
-      toast(
-        getErrorMessage(error, 'Não foi possível atualizar o status do usuário. Tente novamente.'),
-        'error'
-      );
+      toast(getErrorMessage(error, t.admin.statusUpdateFailed), 'error');
     },
   });
 
@@ -105,10 +103,10 @@ export function UsersPage() {
     mutationFn: (id: string) => adminApi.deleteUser(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      toast('Usuário excluído com sucesso.', 'success');
+      toast(t.admin.userDeleted, 'success');
     },
     onError: (error) => {
-      toast(getErrorMessage(error, 'Não foi possível excluir o usuário. Tente novamente.'), 'error');
+      toast(getErrorMessage(error, t.admin.userDeleteFailed), 'error');
     },
   });
 
@@ -145,28 +143,25 @@ export function UsersPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{ptBR.admin.users}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t.admin.users}</h1>
         <Button variant="primary" onClick={openCreate}>
           <Plus className="h-4 w-4" aria-hidden="true" />
-          {ptBR.common.create}
+          {t.common.create}
         </Button>
       </div>
 
       <Card className="overflow-hidden p-0">
         {users && users.length === 0 ? (
-          <EmptyState
-            title="Nenhum usuário cadastrado"
-            description="Crie o primeiro usuário para começar a gerenciar o acesso ao sistema."
-          />
+          <EmptyState title={t.admin.noUsers} description={t.admin.emptyUsersDescription} />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-surface text-left">
               <tr>
-                <th className="px-4 py-3 font-semibold">Nome</th>
-                <th className="px-4 py-3 font-semibold">E-mail</th>
-                <th className="px-4 py-3 font-semibold">Perfil</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
-                <th className="px-4 py-3 font-semibold">Ações</th>
+                <th className="px-4 py-3 font-semibold">{t.admin.name}</th>
+                <th className="px-4 py-3 font-semibold">{t.auth.email}</th>
+                <th className="px-4 py-3 font-semibold">{t.admin.profile}</th>
+                <th className="px-4 py-3 font-semibold">{t.admin.status}</th>
+                <th className="px-4 py-3 font-semibold">{t.admin.actions}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -182,7 +177,7 @@ export function UsersPage() {
                         user.ativo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       )}
                     >
-                      {user.ativo ? 'Ativo' : 'Inativo'}
+                      {user.ativo ? t.admin.active : t.admin.inactive}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -191,6 +186,7 @@ export function UsersPage() {
                         type="button"
                         onClick={() => openEdit(user)}
                         className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                        aria-label={t.common.edit}
                       >
                         <Edit className="h-4 w-4" aria-hidden="true" />
                       </button>
@@ -200,6 +196,7 @@ export function UsersPage() {
                           toggleStatusMutation.mutate({ id: user.id, ativo: !user.ativo })
                         }
                         className="rounded p-1.5 text-yellow-600 hover:bg-yellow-50"
+                        aria-label={user.ativo ? t.admin.inactive : t.admin.active}
                       >
                         {user.ativo ? (
                           <UserX className="h-4 w-4" aria-hidden="true" />
@@ -210,9 +207,10 @@ export function UsersPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm('Deseja excluir este usuário?')) deleteMutation.mutate(user.id);
+                          if (confirm(t.admin.deleteConfirm)) deleteMutation.mutate(user.id);
                         }}
                         className="rounded p-1.5 text-red-600 hover:bg-red-50"
+                        aria-label={t.common.delete}
                       >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
                       </button>
@@ -228,50 +226,54 @@ export function UsersPage() {
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={editing ? 'Editar usuário' : 'Novo usuário'}
+        title={
+          editing
+            ? `${t.common.edit} ${t.admin.user.toLowerCase()}`
+            : `${t.admin.new} ${t.admin.user.toLowerCase()}`
+        }
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={closeModal}>
-              {ptBR.common.cancel}
+              {t.common.cancel}
             </Button>
             <Button
               variant="primary"
               onClick={handleSubmit(onSubmit)}
               isLoading={saveMutation.isPending}
             >
-              {ptBR.common.save}
+              {t.common.save}
             </Button>
           </div>
         }
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Nome *" {...register('nome')} error={errors.nome?.message} />
+          <Input label={`${t.admin.name} *`} {...register('nome')} error={errors.nome?.message} />
           <Input
-            label="E-mail *"
+            label={`${t.auth.email} *`}
             type="email"
             {...register('email')}
             error={errors.email?.message}
           />
           <div>
             <label htmlFor="perfil" className="label">
-              Perfil *
+              {t.admin.permissionProfile}
             </label>
             <select id="perfil" {...register('perfil')} className="input">
               {perfis.map((p) => (
                 <option key={p} value={p}>
-                  {p}
+                  {t.admin.profiles[p]}
                 </option>
               ))}
             </select>
           </div>
           <Input
-            label={editing ? 'Nova senha (deixe em branco para manter)' : 'Senha *'}
+            label={editing ? t.admin.newPasswordKeep : `${t.auth.password} *`}
             type="password"
             {...register('senha')}
           />
           <label className="flex items-center gap-2">
             <input type="checkbox" {...register('ativo')} />
-            <span className="text-sm">Ativo</span>
+            <span className="text-sm">{t.admin.active}</span>
           </label>
         </form>
       </Modal>

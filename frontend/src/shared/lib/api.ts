@@ -43,11 +43,7 @@ const convertToCamelCase = (data: unknown): unknown => {
 };
 
 api.interceptors.request.use((config) => {
-  if (
-    config.data &&
-    typeof config.data === 'object' &&
-    !(config.data instanceof FormData)
-  ) {
+  if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
     config.data = decamelizeKeys(config.data);
   }
   return config;

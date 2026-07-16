@@ -27,7 +27,16 @@ const sizes: Record<ButtonSize, string> = {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = 'primary', size = 'md', isLoading, children, className, disabled, asChild, ...props },
+    {
+      variant = 'primary',
+      size = 'md',
+      isLoading,
+      children,
+      className,
+      disabled,
+      asChild,
+      ...props
+    },
     ref
   ) => {
     const classes = clsx(variants[variant], sizes[size], className);

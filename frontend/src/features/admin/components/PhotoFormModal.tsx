@@ -5,7 +5,7 @@ import { Button } from '@/shared/components/Button';
 import { Input } from '@/shared/components/Input';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Foto, Album } from '@/shared/types';
 
 interface PhotoFormModalProps {
@@ -17,6 +17,7 @@ interface PhotoFormModalProps {
 
 export function PhotoFormModal({ isOpen, onClose, photo, defaultAlbumId }: PhotoFormModalProps) {
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const isEdit = Boolean(photo);
   const [albumId, setAlbumId] = useState(defaultAlbumId || '');
   const [legenda, setLegenda] = useState('');
@@ -70,14 +71,18 @@ export function PhotoFormModal({ isOpen, onClose, photo, defaultAlbumId }: Photo
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Editar foto' : 'Nova foto'}
+      title={
+        isEdit
+          ? `${t.common.edit} ${t.gallery.photo.toLowerCase()}`
+          : `${t.admin.new} ${t.gallery.photo.toLowerCase()}`
+      }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            {ptBR.common.cancel}
+            {t.common.cancel}
           </Button>
           <Button variant="primary" onClick={handleSubmit} isLoading={saveMutation.isPending}>
-            {ptBR.common.save}
+            {t.common.save}
           </Button>
         </div>
       }
@@ -88,7 +93,7 @@ export function PhotoFormModal({ isOpen, onClose, photo, defaultAlbumId }: Photo
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="photo-album" className="label">
-              Álbum *
+              {t.gallery.album} *
             </label>
             <select
               id="photo-album"
@@ -96,7 +101,7 @@ export function PhotoFormModal({ isOpen, onClose, photo, defaultAlbumId }: Photo
               onChange={(e) => setAlbumId(e.target.value)}
               className="input"
             >
-              <option value="">Selecione</option>
+              <option value="">{t.common.open}</option>
               {albums?.map((album: Album) => (
                 <option key={album.id} value={album.id}>
                   {album.titulo}
@@ -104,16 +109,20 @@ export function PhotoFormModal({ isOpen, onClose, photo, defaultAlbumId }: Photo
               ))}
             </select>
           </div>
-          <Input label="Legenda" value={legenda} onChange={(e) => setLegenda(e.target.value)} />
           <Input
-            label="Ordem"
+            label={t.gallery.caption}
+            value={legenda}
+            onChange={(e) => setLegenda(e.target.value)}
+          />
+          <Input
+            label={t.admin.order}
             type="number"
             value={String(ordem)}
             onChange={(e) => setOrdem(Number(e.target.value))}
           />
           <div>
             <label htmlFor="photo-imagem" className="label">
-              Imagem {isEdit ? '' : '*'}
+              {t.gallery.image} {isEdit ? '' : '*'}
             </label>
             <input
               id="photo-imagem"

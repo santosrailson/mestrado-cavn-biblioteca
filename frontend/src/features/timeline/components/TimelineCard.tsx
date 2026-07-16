@@ -4,7 +4,7 @@ import { Calendar, ExternalLink } from 'lucide-react';
 import { Card } from '@/shared/components/Card';
 import { formatTimelineDate } from '@/shared/lib/formatDate';
 import { getImageFallbackState, LOGO_FALLBACK } from '@/shared/lib/imageFallback';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 import { TimelineEvent } from '@/shared/types';
 
 interface TimelineCardProps {
@@ -20,6 +20,7 @@ export function TimelineCard({
   showDocumentLink = true,
   className = '',
 }: TimelineCardProps) {
+  const { t } = useOptionalLocale();
   const fallback = getImageFallbackState(event.imagemDestaque);
   const [imgSrc, setImgSrc] = useState(fallback.imageSrc);
   const [isLogo, setIsLogo] = useState(fallback.isFallback);
@@ -70,7 +71,7 @@ export function TimelineCard({
             className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary no-underline"
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            {ptBR.timeline.viewDocument}
+            {t.timeline.viewDocument}
           </Link>
         )}
       </div>
