@@ -4,7 +4,7 @@ import adminApi from '../api/adminApi';
 import { Button } from '@/shared/components/Button';
 import { Input } from '@/shared/components/Input';
 import { Modal } from '@/shared/components/Modal';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Album } from '@/shared/types';
 
 interface AlbumFormModalProps {
@@ -15,6 +15,7 @@ interface AlbumFormModalProps {
 
 export function AlbumFormModal({ isOpen, onClose, album }: AlbumFormModalProps) {
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const isEdit = Boolean(album);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -61,23 +62,31 @@ export function AlbumFormModal({ isOpen, onClose, album }: AlbumFormModalProps) 
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Editar álbum' : 'Novo álbum'}
+      title={
+        isEdit
+          ? `${t.common.edit} ${t.gallery.album.toLowerCase()}`
+          : `${t.admin.new} ${t.gallery.album.toLowerCase()}`
+      }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            {ptBR.common.cancel}
+            {t.common.cancel}
           </Button>
           <Button variant="primary" onClick={handleSubmit} isLoading={saveMutation.isPending}>
-            {ptBR.common.save}
+            {t.common.save}
           </Button>
         </div>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Título *" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
+        <Input
+          label={`${t.admin.title} *`}
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+        />
         <div>
           <label htmlFor="album-desc" className="label">
-            Descrição
+            {t.admin.categoryDescription}
           </label>
           <textarea
             id="album-desc"
@@ -88,7 +97,7 @@ export function AlbumFormModal({ isOpen, onClose, album }: AlbumFormModalProps) 
         </div>
         <div>
           <label htmlFor="album-capa" className="label">
-            Capa
+            {t.gallery.cover}
           </label>
           <input
             id="album-capa"
@@ -105,7 +114,7 @@ export function AlbumFormModal({ isOpen, onClose, album }: AlbumFormModalProps) 
             checked={destaque}
             onChange={(e) => setDestaque(e.target.checked)}
           />
-          <span className="text-sm">Destaque</span>
+          <span className="text-sm">{t.admin.featured}</span>
         </label>
       </form>
     </Modal>

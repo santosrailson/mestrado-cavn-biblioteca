@@ -37,15 +37,15 @@ export function useSiteConfig() {
       config.find((s) => s.chave === chave)?.valor ?? fallback;
 
     return {
-      titulo:                  get('site.titulo'),
-      subtitulo:               get('site.subtitulo'),
-      descricao:               get('site.descricao'),
-      emailContato:            get('site.email_contato'),
-      rodapeTexto:             get('site.rodape_texto'),
-      corPrimaria:             get('site.cor_primaria', '#0369a1'),
+      titulo: get('site.titulo'),
+      subtitulo: get('site.subtitulo'),
+      descricao: get('site.descricao'),
+      emailContato: get('site.email_contato'),
+      rodapeTexto: get('site.rodape_texto'),
+      corPrimaria: get('site.cor_primaria', '#0369a1'),
       permitirCadastroPublico: get('site.permitir_cadastro_publico') === 'true',
-      itensPorPagina:          parseInt(get('documentos.itens_por_pagina', '20'), 10),
-      permitirDownload:        get('documentos.permitir_download') === 'true',
+      itensPorPagina: parseInt(get('documentos.itens_por_pagina', '20'), 10),
+      permitirDownload: get('documentos.permitir_download') === 'true',
     };
   }, [config]);
 }

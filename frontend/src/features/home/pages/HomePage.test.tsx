@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastProvider } from '@/shared/components/ToastProvider';
+import { LocaleProvider } from '@/shared/i18n';
 import { HomePage } from './HomePage';
 
 vi.mock('@/shared/hooks/useCategories', () => ({
@@ -32,13 +33,15 @@ const makeClient = () => new QueryClient({ defaultOptions: { queries: { retry: f
 function renderPage() {
   return render(
     <HelmetProvider>
-      <QueryClientProvider client={makeClient()}>
-        <ToastProvider>
-          <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-            <HomePage />
-          </MemoryRouter>
-        </ToastProvider>
-      </QueryClientProvider>
+      <LocaleProvider>
+        <QueryClientProvider client={makeClient()}>
+          <ToastProvider>
+            <MemoryRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+              <HomePage />
+            </MemoryRouter>
+          </ToastProvider>
+        </QueryClientProvider>
+      </LocaleProvider>
     </HelmetProvider>
   );
 }

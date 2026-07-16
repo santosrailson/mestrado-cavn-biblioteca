@@ -52,6 +52,13 @@ urlpatterns = [
     path("2fa/status/", twofactor.twofactor_status, name="twofactor_status"),
     path("2fa/setup/", twofactor.twofactor_setup, name="twofactor_setup"),
     path("2fa/verify-setup/", twofactor.twofactor_verify_setup, name="twofactor_verify_setup"),
+    path("2fa/enroll/setup/", twofactor.twofactor_enroll_setup, name="twofactor_enroll_setup"),
+    path("2fa/enroll/verify/", twofactor.twofactor_enroll_verify, name="twofactor_enroll_verify"),
+    path(
+        "2fa/recovery-codes/rotate/",
+        twofactor.twofactor_recovery_codes_rotate,
+        name="twofactor_recovery_codes_rotate",
+    ),
     path("2fa/disable/", twofactor.twofactor_disable, name="twofactor_disable"),
     path("2fa/login/", twofactor.twofactor_login, name="twofactor_login"),
 ]

@@ -12,7 +12,7 @@ import { Card } from '@/shared/components/Card';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Tag } from '@/shared/types';
 
 const tagSchema = z.object({
@@ -26,6 +26,7 @@ export function TagsPage() {
   const [editing, setEditing] = useState<Tag | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
 
   const {
     data: tags,
@@ -54,11 +55,11 @@ export function TagsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tags'] });
-      toast(editing ? 'Tag atualizada com sucesso.' : 'Tag criada com sucesso.', 'success');
+      toast(t.admin.saveSuccess.replace('{entity}', t.admin.tags.slice(0, -1)), 'success');
       closeModal();
     },
     onError: () => {
-      toast('Não foi possível salvar a tag. Tente novamente.', 'error');
+      toast(t.admin.saveFailed, 'error');
     },
   });
 
@@ -66,10 +67,10 @@ export function TagsPage() {
     mutationFn: (id: string) => adminApi.deleteTag(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-tags'] });
-      toast('Tag excluída com sucesso.', 'success');
+      toast(t.admin.deleteSuccess.replace('{entity}', t.admin.tags.slice(0, -1)), 'success');
     },
     onError: () => {
-      toast('Não foi possível excluir a tag. Tente novamente.', 'error');
+      toast(t.admin.deleteFailedGeneric, 'error');
     },
   });
 
@@ -100,10 +101,10 @@ export function TagsPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{ptBR.admin.tags}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t.admin.tags}</h1>
         <Button variant="primary" onClick={openCreate}>
           <Plus className="h-4 w-4" aria-hidden="true" />
-          {ptBR.common.create}
+          {t.common.create}
         </Button>
       </div>
 
@@ -111,10 +112,10 @@ export function TagsPage() {
         <table className="w-full text-sm">
           <thead className="bg-surface text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">Nome</th>
-              <th className="px-4 py-3 font-semibold">Slug</th>
-              <th className="px-4 py-3 font-semibold">Uso</th>
-              <th className="px-4 py-3 font-semibold">Ações</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.name}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.slug}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.usage}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -129,15 +130,17 @@ export function TagsPage() {
                       type="button"
                       onClick={() => openEdit(tag)}
                       className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                      aria-label={t.common.edit}
                     >
                       <Edit className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm('Deseja excluir esta tag?')) deleteMutation.mutate(tag.id);
+                        if (confirm(t.admin.deleteConfirm)) deleteMutation.mutate(tag.id);
                       }}
                       className="rounded p-1.5 text-red-600 hover:bg-red-50"
+                      aria-label={t.common.delete}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>
@@ -152,23 +155,27 @@ export function TagsPage() {
       <Modal
         isOpen={showModal}
         onClose={closeModal}
-        title={editing ? 'Editar tag' : 'Nova tag'}
+        title={
+          editing
+            ? `${t.common.edit} ${t.admin.tags.slice(0, -1).toLowerCase()}`
+            : `${t.admin.new} ${t.admin.tags.slice(0, -1).toLowerCase()}`
+        }
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={closeModal}>
-              {ptBR.common.cancel}
+              {t.common.cancel}
             </Button>
             <Button
               variant="primary"
               onClick={handleSubmit(onSubmit)}
               isLoading={saveMutation.isPending}
             >
-              {ptBR.common.save}
+              {t.common.save}
             </Button>
           </div>
         }
       >
-        <Input label="Nome *" {...register('nome')} error={errors.nome?.message} />
+        <Input label={t.admin.tagName} {...register('nome')} error={errors.nome?.message} />
       </Modal>
     </>
   );

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR as ptBRLocale } from 'date-fns/locale';
+import { enUS as enUSLocale } from 'date-fns/locale';
 import { SEO } from '@/shared/components/SEO';
 import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
@@ -23,7 +24,7 @@ import { Skeleton } from '@/shared/components/Skeleton';
 import { Section } from '@/shared/components/Section';
 import { useDocument } from '@/shared/hooks/useDocuments';
 import { getApiUrl } from '@/shared/lib/api';
-import { getTipoDocumentoLabel, getStatusDocumentoLabel } from '@/shared/lib/documentLabels';
+import { getTipoDocumentoLabel } from '@/shared/lib/documentLabels';
 import { LOGO_FALLBACK } from '@/shared/lib/imageFallback';
 import { useEditable } from '@/features/admin/hooks/useEditable';
 import adminApi from '@/features/admin/api/adminApi';
@@ -41,7 +42,7 @@ const PdfViewer = lazy(() =>
   import('@/features/documents/components/PdfViewer').then((m) => ({ default: m.PdfViewer }))
 );
 import { useToast } from '@/shared/hooks/useToast';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 import { Arquivo, Documento } from '@/shared/types';
 import { trackEvent } from '@/shared/lib/analytics';
 
@@ -66,6 +67,8 @@ export function DocumentDetailPage() {
   const { data: documento, isLoading, error, refetch } = useDocument(slug || '');
   const { canEdit } = useEditable();
   const { toast } = useToast();
+  const { locale, t } = useOptionalLocale();
+  const dateLocale = locale === 'en-US' ? enUSLocale : ptBRLocale;
   const [documentModalOpen, setDocumentModalOpen] = useState(false);
 
   useEffect(() => {
@@ -78,13 +81,13 @@ export function DocumentDetailPage() {
   if (error || !documento) {
     return (
       <main id="main-content" className="container-page py-12">
-        <ErrorMessage title={ptBR.common.notFound} onRetry={refetch} />
+        <ErrorMessage title={t.common.notFound} onRetry={refetch} />
       </main>
     );
   }
 
   const breadcrumbItems = [
-    { label: ptBR.navigation.collection, to: '/busca' },
+    { label: t.navigation.collection, to: '/busca' },
     ...(documento.categorias?.[0]
       ? [
           {
@@ -114,19 +117,19 @@ export function DocumentDetailPage() {
       } else {
         await navigator.clipboard.writeText(url);
         trackEvent('document_shared', { document_type: documento.tipoDocumento });
-        toast('Link copiado para a área de transferência.', 'success');
+        toast(t.document.copyLinkSuccess, 'success');
       }
     } catch {
-      toast('Não foi possível compartilhar o documento.', 'error');
+      toast(t.document.shareError, 'error');
     }
   };
 
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast('Link copiado para a área de transferência.', 'success');
+      toast(t.document.copyLinkSuccess, 'success');
     } catch {
-      toast('Não foi possível copiar o link.', 'error');
+      toast(t.document.copyLinkError, 'error');
     }
   };
 
@@ -134,7 +137,7 @@ export function DocumentDetailPage() {
     <>
       <SEO
         title={documento.titulo}
-        description={documento.resumo || documento.descricao || ptBR.seo.defaultDescription}
+        description={documento.resumo || documento.descricao || t.seo.defaultDescription}
         pathname={`/documentos/${documento.slug}`}
         type="article"
         publishedTime={documento.createdAt}
@@ -158,7 +161,7 @@ export function DocumentDetailPage() {
           </header>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <section className="lg:col-span-2" aria-label="Visualizador do documento">
+            <section className="lg:col-span-2" aria-label={t.document.viewerLabel}>
               <Card className="overflow-hidden p-0">
                 {mainFile ? (
                   <div className="relative min-h-[300px] bg-surface-alt">
@@ -168,13 +171,13 @@ export function DocumentDetailPage() {
                           <ProgressBar
                             label={
                               mainFile.processamentoStatus === 'falhou'
-                                ? 'Falha no processamento'
-                                : 'Processando arquivo'
+                                ? t.document.processingFailed
+                                : t.document.processingFile
                             }
                             value={mainFile.processamentoProgresso}
                             detail={
                               mainFile.processamentoStatus === 'falhou'
-                                ? mainFile.processamentoErro || 'Tente enviar o arquivo novamente.'
+                                ? mainFile.processamentoErro || t.document.processingRetry
                                 : mainFile.processamentoEtapa
                             }
                             indeterminate={
@@ -188,7 +191,7 @@ export function DocumentDetailPage() {
                               className="btn-outline mt-3 text-sm"
                               onClick={() => refetch()}
                             >
-                              Atualizar status e tentar novamente
+                              {t.document.refreshStatus}
                             </button>
                           )}
                         </div>
@@ -198,12 +201,11 @@ export function DocumentDetailPage() {
                         <Suspense fallback={<Skeleton className="h-[60vh] w-full" />}>
                           <PdfViewer
                             url={getViewerUrl(mainFile)}
-                            title={`Visualização PDF de ${documento.titulo}`}
+                            title={`${t.document.previewUnavailable} ${documento.titulo}`}
                           />
                         </Suspense>
                         <p id="pdf-instructions" className="sr-only">
-                          Documento PDF abaixo. Use as teclas de navegação do leitor de PDF do
-                          navegador.
+                          {t.document.pdfInstructions}
                         </p>
                       </>
                     ) : isImage ? (
@@ -225,21 +227,21 @@ export function DocumentDetailPage() {
                     ) : (
                       <div className="flex h-[300px] flex-col items-center justify-center gap-2 text-text-muted">
                         <FileText className="h-12 w-12" aria-hidden="true" />
-                        <p>Visualização não disponível para este formato.</p>
+                        <p>{t.document.previewUnavailable}</p>
                         <a
                           href={getViewerUrl(mainFile)}
                           download
                           className="btn-primary inline-flex no-underline"
                         >
                           <Download className="h-4 w-4" aria-hidden="true" />
-                          {ptBR.document.downloadOriginal}
+                          {t.document.downloadOriginal}
                         </a>
                       </div>
                     )}
                   </div>
                 ) : (
                   <div className="flex h-[300px] items-center justify-center text-[var(--color-text-muted)]">
-                    Nenhum arquivo digital disponível.
+                    {t.document.noFiles}
                   </div>
                 )}
               </Card>
@@ -247,7 +249,7 @@ export function DocumentDetailPage() {
               {documento.descricao && (
                 <section className="mt-6" aria-labelledby="description-title">
                   <h2 id="description-title" className="mb-2 text-xl font-semibold">
-                    {ptBR.document.description}
+                    {t.document.description}
                   </h2>
                   <p className="whitespace-pre-wrap text-[var(--color-text-muted)]">
                     {documento.descricao}
@@ -258,7 +260,7 @@ export function DocumentDetailPage() {
               {mainFile?.conteudoOcr && (
                 <section className="mt-6" aria-labelledby="ocr-title">
                   <h2 id="ocr-title" className="mb-2 text-xl font-semibold">
-                    {ptBR.document.ocrContent}
+                    {t.document.ocrContent}
                   </h2>
                   <div className="max-h-64 overflow-y-auto rounded-md bg-surface-alt p-4 font-mono text-sm text-text">
                     {mainFile.conteudoOcr}
@@ -267,51 +269,67 @@ export function DocumentDetailPage() {
               )}
             </section>
 
-            <aside aria-label={ptBR.document.catalogCard}>
+            <aside aria-label={t.document.catalogCard}>
               <Card className="sticky top-24">
-                <h2 className="mb-4 text-lg font-semibold">{ptBR.document.catalogCard}</h2>
+                <h2 className="mb-4 text-lg font-semibold">{t.document.catalogCard}</h2>
                 <dl className="space-y-3 text-sm">
-                  <MetadataItem label={ptBR.document.metadata.title} value={documento.titulo} />
+                  <MetadataItem label={t.document.metadata.title} value={documento.titulo} />
                   <MetadataItem
-                    label={ptBR.document.metadata.type}
-                    value={getTipoDocumentoLabel(documento.tipoDocumento)}
+                    label={t.document.metadata.type}
+                    value={getTipoDocumentoLabel(
+                      documento.tipoDocumento,
+                      Object.fromEntries(
+                        (
+                          [
+                            'ata',
+                            'relatorio',
+                            'correspondencia',
+                            'fotografia',
+                            'documento_administrativo',
+                            'producao_academica',
+                            'documento_pedagogico',
+                            'outro',
+                          ] as const
+                        ).map((value, index) => [value, t.admin.form.documentTypes[index]])
+                      )
+                    )}
                   />
                   <MetadataItem
-                    label={ptBR.document.metadata.date}
+                    label={t.document.metadata.date}
                     value={
                       documento.dataDocumento
                         ? format(new Date(documento.dataDocumento), 'dd/MM/yyyy', {
-                            locale: ptBRLocale,
+                            locale: dateLocale,
                           })
                         : undefined
                     }
                   />
                   <MetadataItem
-                    label={ptBR.document.metadata.publishedDate}
+                    label={t.document.metadata.publishedDate}
                     value={
                       documento.createdAt
                         ? format(new Date(documento.createdAt), 'dd/MM/yyyy', {
-                            locale: ptBRLocale,
+                            locale: dateLocale,
                           })
                         : undefined
                     }
                   />
                   <MetadataItem
-                    label={ptBR.document.metadata.code}
+                    label={t.document.metadata.code}
                     value={documento.codigoReferencia}
                   />
                   <MetadataItem
-                    label={ptBR.document.metadata.author}
+                    label={t.document.metadata.author}
                     value={documento.autores?.map((a) => a.nome).join(', ')}
                   />
-                  <MetadataItem label={ptBR.document.metadata.language} value={documento.idioma} />
-                  <MetadataItem label={ptBR.document.metadata.format} value={mainFile?.mimeType} />
+                  <MetadataItem label={t.document.metadata.language} value={documento.idioma} />
+                  <MetadataItem label={t.document.metadata.format} value={mainFile?.mimeType} />
                   <MetadataItem
-                    label={ptBR.document.metadata.size}
+                    label={t.document.metadata.size}
                     value={formatBytes(mainFile?.tamanhoBytes)}
                   />
                   <MetadataItem
-                    label={ptBR.document.metadata.dimensions}
+                    label={t.document.metadata.dimensions}
                     value={
                       mainFile?.largura && mainFile?.altura
                         ? `${mainFile.largura}x${mainFile.altura}px`
@@ -319,15 +337,15 @@ export function DocumentDetailPage() {
                     }
                   />
                   <MetadataItem
-                    label={ptBR.document.metadata.checksum}
+                    label={t.document.metadata.checksum}
                     value={mainFile?.checksumSha256}
                     monospace
                     truncate
                   />
-                  <MetadataItem label={ptBR.document.metadata.rights} value={documento.direitos} />
-                  <MetadataItem label={ptBR.document.metadata.source} value={documento.fonte} />
+                  <MetadataItem label={t.document.metadata.rights} value={documento.direitos} />
+                  <MetadataItem label={t.document.metadata.source} value={documento.fonte} />
                   <MetadataItem
-                    label={ptBR.document.metadata.coverage}
+                    label={t.document.metadata.coverage}
                     value={documento.coberturaEspacial}
                   />
                 </dl>
@@ -343,16 +361,16 @@ export function DocumentDetailPage() {
                       }
                     >
                       <Download className="h-4 w-4" aria-hidden="true" />
-                      {ptBR.document.downloadOriginal}
+                      {t.document.downloadOriginal}
                     </a>
                   )}
                   <Button variant="outline" className="w-full" onClick={handleShare}>
                     <Share2 className="h-4 w-4" aria-hidden="true" />
-                    {ptBR.document.share}
+                    {t.document.share}
                   </Button>
                   <Button variant="ghost" className="w-full" onClick={handleCopyLink}>
                     <LinkIcon className="h-4 w-4" aria-hidden="true" />
-                    {ptBR.document.permalink}
+                    {t.document.permalink}
                   </Button>
                 </div>
               </Card>
@@ -362,7 +380,7 @@ export function DocumentDetailPage() {
           {documento.tags && documento.tags.length > 0 && (
             <section className="mt-8" aria-labelledby="tags-title">
               <h2 id="tags-title" className="mb-3 text-lg font-semibold">
-                {ptBR.document.tags}
+                {t.document.tags}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {documento.tags.map((tag) => (
@@ -381,7 +399,7 @@ export function DocumentDetailPage() {
           {documento.categorias && documento.categorias.length > 0 && (
             <section className="mt-6" aria-labelledby="categories-title">
               <h2 id="categories-title" className="mb-3 text-lg font-semibold">
-                {ptBR.document.categories}
+                {t.document.categories}
               </h2>
               <ul className="space-y-1 text-sm">
                 {documento.categorias.map((cat) => (
@@ -398,7 +416,7 @@ export function DocumentDetailPage() {
           {documento.relacionados && documento.relacionados.length > 0 && (
             <Section variant="alt" ariaLabelledby="related-title" className="mt-12 !py-10">
               <h2 id="related-title" className="section-title mb-6">
-                {ptBR.document.relatedDocuments}
+                {t.document.relatedDocuments}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {documento.relacionados.map((doc) => (
@@ -424,6 +442,7 @@ export function DocumentDetailPage() {
 function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onEdit: () => void }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useOptionalLocale();
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['document', documento.slug] });
@@ -434,33 +453,33 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
     mutationFn: () => adminApi.submitDocument(documento.slug),
     onSuccess: () => {
       invalidate();
-      toast('Documento enviado para revisão.', 'success');
+      toast(t.document.submitSuccess, 'success');
     },
-    onError: () => toast('Erro ao submeter documento.', 'error'),
+    onError: () => toast(t.document.submitError, 'error'),
   });
   const approveMutation = useMutation({
     mutationFn: () => adminApi.approveDocument(documento.slug),
     onSuccess: () => {
       invalidate();
-      toast('Documento aprovado.', 'success');
+      toast(t.document.approveSuccess, 'success');
     },
-    onError: () => toast('Erro ao aprovar documento.', 'error'),
+    onError: () => toast(t.document.approveError, 'error'),
   });
   const publishMutation = useMutation({
     mutationFn: () => adminApi.publishDocument(documento.slug),
     onSuccess: () => {
       invalidate();
-      toast('Documento publicado com sucesso.', 'success');
+      toast(t.document.publishSuccess, 'success');
     },
-    onError: () => toast('Erro ao publicar documento.', 'error'),
+    onError: () => toast(t.document.publishError, 'error'),
   });
   const archiveMutation = useMutation({
     mutationFn: () => adminApi.archiveDocument(documento.slug),
     onSuccess: () => {
       invalidate();
-      toast('Documento arquivado.', 'success');
+      toast(t.document.archiveSuccess, 'success');
     },
-    onError: () => toast('Erro ao arquivar documento.', 'error'),
+    onError: () => toast(t.document.archiveError, 'error'),
   });
 
   const statusColors: Record<string, string> = {
@@ -477,14 +496,14 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
         <span
           className={`rounded px-2 py-1 text-xs font-semibold uppercase ${statusColors[documento.status] || statusColors.rascunho}`}
         >
-          {getStatusDocumentoLabel(documento.status)}
+          {t.admin.statuses[documento.status] || t.admin.statuses.rascunho}
         </span>
-        <span className="text-xs text-primary">Ações administrativas</span>
+        <span className="text-xs text-primary">{t.document.administrativeActions}</span>
       </div>
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" size="sm" onClick={onEdit}>
           <Pencil className="h-4 w-4" aria-hidden="true" />
-          Editar
+          {t.common.edit}
         </Button>
         {documento.status === 'rascunho' && (
           <Button
@@ -494,7 +513,7 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
             isLoading={submitMutation.isPending}
           >
             <Send className="h-4 w-4" aria-hidden="true" />
-            Submeter
+            {t.admin.workflow.submit}
           </Button>
         )}
         {documento.status === 'em_revisao' && (
@@ -505,7 +524,7 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
             isLoading={approveMutation.isPending}
           >
             <CheckCircle className="h-4 w-4" aria-hidden="true" />
-            Aprovar
+            {t.admin.workflow.approve}
           </Button>
         )}
         {documento.status === 'aprovado' && (
@@ -516,7 +535,7 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
             isLoading={publishMutation.isPending}
           >
             <Globe className="h-4 w-4" aria-hidden="true" />
-            Publicar
+            {t.admin.workflow.publish}
           </Button>
         )}
         {documento.status === 'publicado' && (
@@ -527,7 +546,7 @@ function AdminDocumentActions({ documento, onEdit }: { documento: Documento; onE
             isLoading={archiveMutation.isPending}
           >
             <Archive className="h-4 w-4" aria-hidden="true" />
-            Arquivar
+            {t.admin.workflow.archive}
           </Button>
         )}
       </div>

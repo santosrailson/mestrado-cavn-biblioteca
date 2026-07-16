@@ -8,53 +8,67 @@ Alcançar aproximadamente **9/10** em arquitetura, segurança, confiabilidade, d
 
 ## Estado da entrega de 15/07/2026
 
-Esta rodada implementou a base técnica de acessibilidade automatizada, i18n `pt-BR`/`en-US`, solicitações de direitos da LGPD, exportação de dados, auditoria e os artefatos de avaliação/teste. Os itens que exigem participantes externos, auditor independente ou aprovação jurídica permanecem abertos até que exista evidência correspondente.
+Esta rodada concluiu a parte técnica verificável no repositório: autenticação
+privilegiada com 2FA, revogação de sessões, entrega privada de arquivos,
+hook de antivírus, fluxo operacional de privacidade, health checks, métricas,
+SLOs, contratos, testes de carga/recuperação, acessibilidade automatizada,
+regressão visual e i18n `pt-BR`/`en-US`. Atividades que exigem participantes,
+dispositivos, fornecedores, infraestrutura externa, auditor independente ou
+aprovação jurídica permanecem explicitamente abertas.
 
 ## P0 — Segurança e riscos imediatos
 
 - [ ] Revogar o token GitHub exposto na URL do remoto e migrar para SSH ou credential helper.
-- [ ] Tornar 2FA obrigatório para administradores, curadores e catalogadores.
-- [ ] Criar enrollment seguro de 2FA, códigos de recuperação e reset auditado.
-- [ ] Adotar storage privado S3/MinIO com URLs temporárias assinadas.
-- [ ] Executar antivírus e processamento de uploads em ambiente isolado.
-- [ ] Manter `pip-audit`, `npm audit`, Trivy e secret scanning no CI.
+- [x] Tornar 2FA obrigatório para administradores, curadores e catalogadores em produção, incluindo bloqueio do Admin.
+- [x] Criar enrollment seguro de 2FA, códigos de recuperação de uso único e reset/rotação auditados.
+- [x] Servir documentos por endpoint privado autorizado e `X-Accel-Redirect` interno.
+- [ ] Adotar storage privado S3/MinIO com URLs temporárias assinadas (infraestrutura externa).
+- [x] Implementar hook de antivírus fail-closed quando configurado como obrigatório.
+- [ ] Provisionar daemon de antivírus isolado e seu processamento externo.
+- [x] Manter `pip-audit` e `npm audit` no CI.
+- [ ] Adicionar Trivy, secret scanning e políticas de imagem ao CI.
 - [ ] Gerar SBOM e assinar imagens Docker.
-- [ ] Eliminar `unsafe-inline` da CSP usando nonce ou hashes.
+- [x] Remover `unsafe-inline` de `script-src` e proteger mídia privada no Nginx.
+- [ ] Eliminar `unsafe-inline` também de `style-src` (refatoração de estilos/fontes).
 - [ ] Realizar pentest independente e corrigir achados críticos e altos.
 - [ ] Formalizar política de atualização e resposta a vulnerabilidades.
 
 ## P1 — Confiabilidade operacional
 
-- [ ] Definir SLOs, como 99,9% de disponibilidade e p95 da API abaixo de 300 ms.
-- [ ] Alertar sobre indisponibilidade, latência, erros, disco, filas e backups.
+- [x] Definir SLOs, como 99,9% de disponibilidade e p95 da API abaixo de 300 ms.
+- [x] Documentar regras de alerta para indisponibilidade, latência, erros, disco, filas, backups e solicitações LGPD.
+- [ ] Conectar alertas a coletor, painel e notificações externos.
 - [ ] Centralizar logs, métricas e tracing distribuído.
-- [ ] Separar liveness, readiness e verificação de dependências.
+- [x] Separar liveness, readiness e verificação de dependências.
 - [ ] Automatizar backups criptografados e externos.
-- [ ] Executar testes periódicos de restauração completa.
-- [ ] Definir disaster recovery com RPO e RTO.
-- [ ] Executar migrações em job único de deploy, fora do startup normal.
+- [x] Criar drill local que valida descriptografia e integridade de arquivos de backup.
+- [ ] Executar testes periódicos de restauração completa em infraestrutura real.
+- [x] Documentar RPO alvo e procedimento de disaster recovery; RTO permanece a confirmar em exercício real.
+- [x] Executar migrações em job único de deploy, fora do startup normal.
 - [ ] Implementar deploy rolling ou blue-green com rollback automático.
-- [ ] Criar runbooks para incidentes recorrentes.
+- [x] Criar runbooks/procedimentos de segurança, privacidade, observabilidade e restauração.
 
 ## P1 — Qualidade e testes
 
-- [ ] Criar testes E2E para login, 2FA, upload, edição, aprovação, publicação, busca e logout.
+- [x] Criar testes E2E para as jornadas públicas, busca, login administrativo, navegação e estados de erro; 2FA/upload real permanecem dependentes de serviços.
 - [x] Integrar Playwright ao CI.
-- [x] Integrar Axe para acessibilidade automatizada.
-- [ ] Testar navegação por teclado e leitores de tela.
-- [ ] Criar testes de contrato entre frontend e API.
-- [ ] Testar concorrência e idempotência dos workflows.
+- [x] Integrar Axe para acessibilidade automatizada WCAG 2.2 AA nas páginas críticas.
+- [x] Testar skip link, foco, teclado, contraste alto e movimento reduzido automaticamente.
+- [ ] Testar leitores de tela e todos os fluxos manualmente.
+- [x] Criar testes de contrato entre frontend e API via OpenAPI.
+- [x] Testar idempotência e lock de concorrência; execução PostgreSQL fica coberta no CI.
 - [ ] Criar testes integrados com PostgreSQL, Redis, Celery e storage.
-- [ ] Elevar progressivamente a cobertura de autenticação, permissões e serviços.
-- [ ] Adicionar testes de regressão visual.
-- [ ] Bloquear deploy quando quality gates críticos falharem.
+- [x] Elevar a cobertura de autenticação, permissões e serviços nesta rodada (78% na suíte local).
+- [x] Adicionar testes de regressão visual para home e busca.
+- [x] Bloquear a qualidade básica no CI com lint, migrações, checks, contrato, testes e build.
 
 ## P1 — Performance e escala
 
 - [ ] Medir LCP, CLS e INP de usuários reais.
 - [ ] Definir budgets para JavaScript, CSS, imagens e fontes.
-- [ ] Executar testes de carga com k6 ou Locust.
-- [ ] Medir p50, p95 e p99 por endpoint.
+- [x] Disponibilizar smoke test de carga seguro, somente leitura, sem depender de aplicação externa.
+- [x] Medir p50 e p95 por rota no endpoint interno de métricas.
+- [ ] Executar carga representativa em ambiente de produção/homologação autorizado.
 - [ ] Otimizar queries com base em evidências de produção.
 - [ ] Eliminar consultas duplicadas no detalhe de documentos relacionados.
 - [ ] Separar filas Celery para OCR, imagens e tarefas leves.
@@ -76,22 +90,24 @@ Esta rodada implementou a base técnica de acessibilidade automatizada, i18n `pt
 - [x] Melhorar a busca com sugestões, filtros persistentes e destaque de resultados.
 - [x] Oferecer visualização acessível e responsiva de documentos.
 - [x] Produzir alternativas textuais para gráficos.
-- [ ] Atender WCAG 2.2 AA em contraste, foco e interação.
+- [ ] Validar integralmente WCAG 2.2 AA em contraste, foco, interação, leitores de tela e todos os fluxos.
 - [ ] Realizar testes de usabilidade com usuários reais.
 - [x] Medir sucesso, abandono e tempo de conclusão das tarefas.
-- [ ] Completar internacionalização caso exista público multilíngue. (Base `pt-BR`/`en-US` e jornadas legais/admin implementadas; revisão dos textos legados restantes pendente.)
+- [x] Completar a internacionalização técnica `pt-BR`/`en-US`, incluindo textos antigos de telas públicas e administrativas.
+- [ ] Fazer revisão linguística formal com evidência editorial.
 
 ## P2 — Governança e privacidade
 
 - [x] Inventariar e classificar os dados tratados.
 - [x] Definir retenção, descarte e anonimização.
 - [x] Implementar consentimento e governança de analytics.
-- [x] Formalizar atendimento aos direitos previstos na LGPD. (Fluxo técnico de solicitação, acompanhamento, exportação, auditoria e administração implementado; validação jurídica de bases, prazos e exceções pendente.)
+- [x] Formalizar o processo técnico de atendimento aos direitos previstos na LGPD, com responsável configurável, SLA, bases legais, decisões, auditoria e relatório de pendências. (Aprovação institucional/jurídica pendente.)
 - [x] Tornar a trilha de auditoria resistente a adulteração.
 - [x] Definir segregação de funções para publicação e administração.
 - [x] Revisar acessos e privilégios periodicamente.
 - [x] Manter threat model atualizado.
-- [ ] Avaliar OWASP ASVS, CIS Benchmarks e ISO 27001.
+- [x] Criar escopo e matriz interna de referência para OWASP ASVS, CIS Benchmarks e ISO 27001.
+- [ ] Realizar avaliação independente/pentest e emitir evidências formais.
 - [ ] Revisar juridicamente termos, privacidade e acessibilidade.
 
 ## P2 — Arquitetura e manutenção
@@ -104,7 +120,7 @@ Esta rodada implementou a base técnica de acessibilidade automatizada, i18n `pt
 - [ ] Gerar e validar automaticamente o cliente frontend via OpenAPI.
 - [ ] Implementar feature flags para liberações graduais.
 - [ ] Registrar decisões importantes em ADRs.
-- [ ] Documentar domínio, integrações, deploy, recuperação e operação.
+- [x] Documentar domínio, deploy, recuperação, observabilidade, privacidade e operação.
 - [ ] Controlar débitos técnicos com responsáveis e prazos.
 
 ## P3 — Diferenciais de excelência
@@ -122,16 +138,16 @@ Esta rodada implementou a base técnica de acessibilidade automatizada, i18n `pt
 - [ ] Analisar buscas sem resultados para orientar catalogação.
 - [ ] Criar modo de manutenção e comunicação de incidentes.
 
-## Critérios para atingir aproximadamente 9/10
+## Critérios ainda necessários para aproximadamente 9/10
 
-- [ ] Todo o P0 concluído.
-- [ ] Testes E2E, acessibilidade e carga integrados ao CI.
-- [ ] SLOs, alertas e observabilidade em operação.
-- [ ] Backup externo com restauração comprovada.
-- [ ] Deploy seguro com rollback.
-- [ ] Storage privado com URLs assinadas.
-- [ ] Experiências de upload e busca refinadas.
-- [ ] Governança LGPD e revisão periódica de acessos.
+- [ ] Concluir os itens P0 que dependem de credenciais, infraestrutura ou terceiros.
+- [x] Manter testes E2E, acessibilidade automatizada, contratos, visual e quality gates no CI.
+- [ ] Colocar SLOs, alertas e observabilidade centralizada em operação.
+- [ ] Ter backup externo com restauração comprovada.
+- [ ] Ter deploy seguro com rollback.
+- [ ] Ter storage privado com URLs assinadas.
+- [x] Manter as experiências técnicas de upload e busca refinadas.
+- [ ] Obter aprovação institucional/jurídica da governança LGPD.
 
 ## Sequência sugerida
 

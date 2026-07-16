@@ -10,22 +10,23 @@ import {
   FileText,
   Image,
 } from 'lucide-react';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 export function Footer() {
+  const { t } = useLocale();
   const year = new Date().getFullYear();
 
   const institutionalLinks = [
-    { label: ptBR.footer.about, to: '/sobre', icon: BookOpen },
-    { label: ptBR.navigation.timeline, to: '/linha-do-tempo', icon: null },
-    { label: ptBR.navigation.gallery, to: '/galeria', icon: Image },
-    { label: ptBR.navigation.academic, to: '/producao-academica', icon: FileText },
+    { label: t.footer.about, to: '/sobre', icon: BookOpen },
+    { label: t.navigation.timeline, to: '/linha-do-tempo', icon: null },
+    { label: t.navigation.gallery, to: '/galeria', icon: Image },
+    { label: t.navigation.academic, to: '/producao-academica', icon: FileText },
   ];
 
   const supportLinks = [
-    { label: ptBR.footer.accessibility, to: '/acessibilidade' },
-    { label: ptBR.footer.terms, to: '/termo-de-uso' },
-    { label: ptBR.footer.privacy, to: '/politica-de-privacidade' },
+    { label: t.footer.accessibility, to: '/acessibilidade' },
+    { label: t.footer.terms, to: '/termo-de-uso' },
+    { label: t.footer.privacy, to: '/politica-de-privacidade' },
   ];
 
   return (
@@ -36,26 +37,26 @@ export function Footer() {
       <div className="container-page grid gap-10 md:grid-cols-2 lg:grid-cols-4">
         {/* Brand */}
         <div className="lg:col-span-1">
-          <h2 className="mb-3 text-lg font-bold text-text">{ptBR.common.siteName}</h2>
-          <p className="mb-5 text-sm leading-relaxed text-text-muted">{ptBR.home.heroSubtitle}</p>
+          <h2 className="mb-3 text-lg font-bold text-text">{t.common.siteName}</h2>
+          <p className="mb-5 text-sm leading-relaxed text-text-muted">{t.home.heroSubtitle}</p>
           <address className="not-italic text-sm text-text-muted space-y-2">
             <p className="flex items-start gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              {ptBR.footer.address}
+              {t.footer.address}
             </p>
             <p className="flex items-center gap-2">
               <Mail className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              <a href={`mailto:${ptBR.footer.email}`} className="text-text-muted hover:text-text">
-                {ptBR.footer.email}
+              <a href={`mailto:${t.footer.email}`} className="text-text-muted hover:text-text">
+                {t.footer.email}
               </a>
             </p>
             <p className="flex items-center gap-2">
               <Phone className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
               <a
-                href={`tel:${ptBR.footer.phone.replace(/\D/g, '')}`}
+                href={`tel:${t.footer.phone.replace(/\D/g, '')}`}
                 className="text-text-muted hover:text-text"
               >
-                {ptBR.footer.phone}
+                {t.footer.phone}
               </a>
             </p>
           </address>
@@ -64,7 +65,7 @@ export function Footer() {
         {/* Acervo */}
         <div>
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-text">
-            {ptBR.footer.collectionTitle}
+            {t.footer.collectionTitle}
           </h3>
           <ul className="space-y-2.5 text-sm">
             {institutionalLinks.map((link) => (
@@ -84,7 +85,7 @@ export function Footer() {
         {/* Suporte */}
         <div>
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-text">
-            {ptBR.footer.supportTitle}
+            {t.footer.supportTitle}
           </h3>
           <ul className="space-y-2.5 text-sm">
             {supportLinks.map((link) => (
@@ -100,11 +101,9 @@ export function Footer() {
         {/* Feedback & Social */}
         <div>
           <h3 className="mb-4 text-sm font-bold uppercase tracking-wide text-text">
-            {ptBR.footer.contributeTitle}
+            {t.footer.contributeTitle}
           </h3>
-          <p className="mb-4 text-sm leading-relaxed text-text-muted">
-            {ptBR.footer.contributeText}
-          </p>
+          <p className="mb-4 text-sm leading-relaxed text-text-muted">{t.footer.contributeText}</p>
           <a
             href={import.meta.env.VITE_FEEDBACK_FORM_URL || '#'}
             target="_blank"
@@ -112,7 +111,7 @@ export function Footer() {
             className="btn-primary mb-6 text-sm"
           >
             <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            {ptBR.footer.feedback}
+            {t.footer.feedback}
           </a>
           <div className="flex gap-3">
             <a
@@ -138,8 +137,8 @@ export function Footer() {
       </div>
 
       <div className="container-page mt-10 border-t border-border pt-6 text-center text-xs text-text-muted">
-        <p className="font-medium text-text">{ptBR.footer.institutional}</p>
-        <p className="mt-1">{ptBR.footer.copyright.replace('{year}', String(year))}</p>
+        <p className="font-medium text-text">{t.footer.institutional}</p>
+        <p className="mt-1">{t.footer.copyright.replace('{year}', String(year))}</p>
       </div>
     </footer>
   );

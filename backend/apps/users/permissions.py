@@ -7,33 +7,21 @@ class IsAdministrator(permissions.BasePermission):
     """Permite acesso apenas a administradores."""
 
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.is_administrator
-        )
+        return request.user and request.user.is_authenticated and request.user.is_administrator
 
 
 class IsCurator(permissions.BasePermission):
     """Permite acesso a curadores e administradores."""
 
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.can_moderate()
-        )
+        return request.user and request.user.is_authenticated and request.user.can_moderate()
 
 
 class IsCataloguer(permissions.BasePermission):
     """Permite acesso a catalogadores, curadores e administradores."""
 
     def has_permission(self, request, view):
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.can_catalogue()
-        )
+        return request.user and request.user.is_authenticated and request.user.can_catalogue()
 
 
 class IsOwnerOrAdministrator(permissions.BasePermission):
@@ -51,11 +39,7 @@ class IsAdministratorOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.is_administrator
-        )
+        return request.user and request.user.is_authenticated and request.user.is_administrator
 
 
 class IsCuratorOrAdminOrReadOnly(permissions.BasePermission):
@@ -64,8 +48,4 @@ class IsCuratorOrAdminOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
-        return (
-            request.user
-            and request.user.is_authenticated
-            and request.user.can_moderate()
-        )
+        return request.user and request.user.is_authenticated and request.user.can_moderate()

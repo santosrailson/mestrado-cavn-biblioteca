@@ -1,11 +1,12 @@
 """ViewSets e views para documentos e arquivos."""
 
+from django.conf import settings
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.core.exceptions import PermissionDenied
 from django.db import connection
 from django.db.models import Count, Prefetch, Q
 from django.db.models import F as _F
-from django.http import HttpResponse
+from django.http import FileResponse, HttpResponse
 from django.utils import timezone
 from django.utils.http import content_disposition_header
 from django_filters.rest_framework import DjangoFilterBackend
@@ -328,11 +329,21 @@ class ArquivoViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        response = HttpResponse()
-        response["Content-Type"] = arquivo.mime_type or "application/octet-stream"
-        response["Content-Disposition"] = content_disposition_header(True, arquivo.nome_original)
+        disposition = content_disposition_header(True, arquivo.nome_original)
+        if getattr(settings, "USE_X_ACCEL_REDIRECT", not settings.DEBUG):
+            response = HttpResponse()
+            response["Content-Type"] = arquivo.mime_type or "application/octet-stream"
+            response["Content-Disposition"] = disposition
+            response["Cache-Control"] = "private, no-store"
+            response["X-Accel-Redirect"] = f"/media-protected/{arquivo.arquivo.name}"
+            return response
+
+        response = FileResponse(
+            arquivo.arquivo.open("rb"),
+            content_type=arquivo.mime_type or "application/octet-stream",
+        )
+        response["Content-Disposition"] = disposition
         response["Cache-Control"] = "private, no-store"
-        response["X-Accel-Redirect"] = f"/media-protected/{arquivo.arquivo.name}"
         return response
 
     @action(detail=False, methods=["get"], url_path="authorize")

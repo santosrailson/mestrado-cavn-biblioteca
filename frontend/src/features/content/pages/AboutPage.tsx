@@ -5,7 +5,7 @@ import { Breadcrumb } from '@/shared/components/Breadcrumb';
 import { Section, SectionHeader } from '@/shared/components/Section';
 import { Skeleton } from '@/shared/components/Skeleton';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 interface Configuracao {
   chave: string;
@@ -24,40 +24,34 @@ function useConfig(chave: string, fallback: string) {
   });
 }
 
-const DEFAULT_PARAGRAPHS = [
-  'O Repositório Digital do Colégio Agrícola Vidal de Negreiros (CAVN/UFPB) foi criado para preservar e disponibilizar a memória histórica, fotográfica e documental da instituição.',
-  'Aqui você encontra documentos textuais, fotografias históricas, atas, relatórios, correspondências, produção acadêmica e outros materiais que registram a trajetória do CAVN ao longo das décadas.',
-  'O acervo é organizado por categorias e pode ser explorado por meio da busca, da linha do tempo ou da galeria de imagens. Todo o conteúdo é disponibilizado com fins educacionais, culturais e de preservação da memória institucional.',
-];
-
 export function AboutPage() {
+  const { t } = useLocale();
+  const defaultParagraphs = t.about.paragraphs;
   const {
     data: subtitle,
     isLoading: subtitleLoading,
     error: subtitleError,
     refetch: refetchSubtitle,
-  } = useConfig('sobre_subtitulo', 'Conheça o Repositório Digital do CAVN/UFPB');
+  } = useConfig('sobre_subtitulo', t.about.subtitle);
   const {
     data: conteudo,
     isLoading: conteudoLoading,
     error: conteudoError,
     refetch: refetchConteudo,
-  } = useConfig('sobre_conteudo', DEFAULT_PARAGRAPHS.join('\n\n'));
+  } = useConfig('sobre_conteudo', defaultParagraphs.join('\n\n'));
 
   const hasError = subtitleError || conteudoError;
 
-  const paragraphs = conteudo
-    ? conteudo.split(/\n\n+/).filter(Boolean)
-    : DEFAULT_PARAGRAPHS;
+  const paragraphs = conteudo ? conteudo.split(/\n\n+/).filter(Boolean) : defaultParagraphs;
 
   return (
     <>
-      <SEO title={ptBR.footer.about} />
+      <SEO title={t.footer.about} />
       <main id="main-content">
         <Section ariaLabelledby="about-title">
-          <Breadcrumb items={[{ label: ptBR.footer.about }]} className="mb-6" />
+          <Breadcrumb items={[{ label: t.footer.about }]} className="mb-6" />
           <SectionHeader
-            title={ptBR.footer.about}
+            title={t.footer.about}
             titleId="about-title"
             subtitle={subtitleLoading ? '' : subtitle}
             centered

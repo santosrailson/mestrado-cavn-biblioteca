@@ -7,7 +7,7 @@ from celery import shared_task
 from apps.core.constants import ProcessingStatus
 from apps.core.middleware import request_id_var
 from apps.documents.models import Arquivo
-from apps.documents.services import process_uploaded_file
+from apps.documents.services import MalwareDetectedError, process_uploaded_file
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +53,14 @@ def processar_arquivo_async(self, arquivo_id: str, request_id: str = "") -> dict
     except Arquivo.DoesNotExist:
         logger.error("processar_arquivo_async: arquivo %s não encontrado", arquivo_id)
         return {"status": "error", "detail": "Arquivo não encontrado"}
+    except MalwareDetectedError as exc:
+        Arquivo.objects.filter(pk=arquivo_id).update(
+            processamento_status=ProcessingStatus.FAILED,
+            processamento_etapa="antivírus",
+            processamento_erro=str(exc)[:2000],
+        )
+        logger.error("processar_arquivo_async: malware no arquivo %s", arquivo_id)
+        return {"status": "rejected", "detail": "Arquivo rejeitado pelo antivírus"}
     except Exception as exc:
         Arquivo.objects.filter(pk=arquivo_id).update(
             processamento_status=ProcessingStatus.FAILED,

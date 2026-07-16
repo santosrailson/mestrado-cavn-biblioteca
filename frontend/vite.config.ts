@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
@@ -21,9 +21,69 @@ const manifest = {
   ],
 };
 
+const isE2ERuntime = process.env.CAVN_E2E === 'true';
+
+function e2eApiMockPlugin(): Plugin {
+  return {
+    name: 'cavn-e2e-api-mock',
+    transformIndexHtml(html) {
+      return html
+        .replace(/\s*<link rel="preconnect" href="https:\/\/fonts\.bunny\.net" \/>/, '')
+        .replace(/\s*<link\s+rel="stylesheet"\s+href="https:\/\/fonts\.bunny\.net[^>]+\/>/, '');
+    },
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const requestUrl = request.url ?? '';
+        if (!requestUrl.startsWith('/api/v1/')) {
+          next();
+          return;
+        }
+
+        const path = requestUrl.split('?')[0];
+        if (request.method === 'OPTIONS') {
+          response.statusCode = 204;
+          response.end();
+          return;
+        }
+
+        response.setHeader('Content-Type', 'application/json');
+        if (path.includes('/auth/me/') || path.includes('/auth/refresh/')) {
+          response.statusCode = 401;
+          response.end(JSON.stringify({ detail: 'Unauthorized' }));
+          return;
+        }
+
+        if (path.includes('/analytics/')) {
+          response.statusCode = 204;
+          response.end();
+          return;
+        }
+
+        if (path.includes('/galeria/')) {
+          response.statusCode = 200;
+          response.end('[]');
+          return;
+        }
+
+        response.statusCode = 200;
+        response.end(
+          JSON.stringify(
+            path.includes('/config/') ||
+              path.includes('/categorias/') ||
+              path.includes('/timeline/')
+              ? []
+              : { count: 0, next: null, previous: null, results: [] }
+          )
+        );
+      });
+    },
+  };
+}
+
 export default defineConfig({
   plugins: [
     react(),
+    ...(isE2ERuntime ? [e2eApiMockPlugin()] : []),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['cavn-logo.png', 'og-image.png'],
@@ -62,12 +122,17 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    proxy: {
-      '/api/v1': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
+    // Os testes E2E mockam as chamadas da API no navegador. Manter o proxy
+    // ativo nesse cenário cria ruído e uma dependência desnecessária de um
+    // backend local no runner do CI.
+    proxy: isE2ERuntime
+      ? undefined
+      : {
+          '/api/v1': {
+            target: 'http://localhost:8000',
+            changeOrigin: true,
+          },
+        },
   },
   build: {
     outDir: 'dist',

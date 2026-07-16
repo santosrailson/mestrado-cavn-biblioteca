@@ -39,7 +39,11 @@ class DocumentoRelacionadoSerializer(serializers.ModelSerializer):
             capa = capas[0] if capas else None
         else:
             capa = obj.documento_destino.arquivos.filter(tipo_arquivo="original").first()
-        return capa.arquivo.url if capa else None
+        if capa is None:
+            return None
+        request = self.context.get("request")
+        relative_url = f"/api/v1/documentos/arquivos/{capa.pk}/download/"
+        return request.build_absolute_uri(relative_url) if request else relative_url
 
 
 class AutorSerializer(serializers.ModelSerializer):
@@ -72,6 +76,9 @@ class ArquivoSerializer(serializers.ModelSerializer):
             "processamento_etapa",
             "processamento_progresso",
             "processamento_erro",
+            "antivirus_status",
+            "antivirus_escaneado_em",
+            "antivirus_diagnostico",
             "created_at",
         ]
 
@@ -87,9 +94,8 @@ class ArquivoSerializer(serializers.ModelSerializer):
 
         if is_public or can_access_private:
             request = self.context.get("request")
-            if not is_public and request is not None:
-                return request.build_absolute_uri(f"/api/v1/documentos/arquivos/{obj.pk}/download/")
-            return obj.arquivo.url
+            relative_url = f"/api/v1/documentos/arquivos/{obj.pk}/download/"
+            return request.build_absolute_uri(relative_url) if request else relative_url
         return None
 
 

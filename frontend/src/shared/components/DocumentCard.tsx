@@ -3,11 +3,15 @@ import { Link } from 'react-router-dom';
 import { FileText, Image as ImageIcon, Calendar, Clock } from 'lucide-react';
 import { Arquivo, Documento } from '@/shared/types';
 import { EditButton } from '@/features/admin/components/EditButton';
-import { getTipoDocumentoLabel } from '@/shared/lib/documentLabels';
-import { getImageFallbackState, isGeneratedSeedCover, LOGO_FALLBACK } from '@/shared/lib/imageFallback';
+import {
+  getImageFallbackState,
+  isGeneratedSeedCover,
+  LOGO_FALLBACK,
+} from '@/shared/lib/imageFallback';
 import { CARD_IMAGE_SIZES } from '@/shared/lib/imageSrcSet';
 import { format } from 'date-fns';
-import { ptBR as ptBRLocale } from 'date-fns/locale';
+import { enUS as enUSLocale, ptBR as ptBRLocale } from 'date-fns/locale';
+import { useLocale } from '@/shared/i18n';
 
 interface DocumentCardProps {
   documento: Documento;
@@ -17,6 +21,18 @@ interface DocumentCardProps {
 }
 
 export function DocumentCard({ documento, highlight, editTo, onEdit }: DocumentCardProps) {
+  const { locale, t } = useLocale();
+  const dateLocale = locale === 'en-US' ? enUSLocale : ptBRLocale;
+  const typeIndex: Record<string, number> = {
+    ata: 0,
+    relatorio: 1,
+    correspondencia: 2,
+    fotografia: 3,
+    documento_administrativo: 4,
+    producao_academica: 5,
+    documento_pedagogico: 6,
+    outro: 7,
+  };
   const rawThumbnail = getDocumentThumbnail(documento);
 
   const fallback = getImageFallbackState(rawThumbnail);
@@ -39,7 +55,7 @@ export function DocumentCard({ documento, highlight, editTo, onEdit }: DocumentC
     <article className="card group relative flex h-full flex-col overflow-hidden p-0">
       {editTo && onEdit && (
         <div className="absolute right-2 top-2 z-10">
-          <EditButton onClick={() => onEdit(editTo)} label="Editar" />
+          <EditButton onClick={() => onEdit(editTo)} label={t.document.edit} />
         </div>
       )}
       <Link
@@ -48,7 +64,10 @@ export function DocumentCard({ documento, highlight, editTo, onEdit }: DocumentC
       >
         <img
           src={imgSrc}
-          alt={isImage ? `Fotografia: ${documento.titulo}` : `Documento: ${documento.titulo}`}
+          alt={(isImage ? t.document.imageAlt : t.document.documentAlt).replace(
+            '{title}',
+            documento.titulo
+          )}
           className={
             isLogo
               ? 'h-full w-full bg-white object-contain p-8 opacity-90 transition-opacity duration-300 group-hover:opacity-100'
@@ -69,7 +88,8 @@ export function DocumentCard({ documento, highlight, editTo, onEdit }: DocumentC
           ) : (
             <FileText className="h-3 w-3" aria-hidden="true" />
           )}
-          {getTipoDocumentoLabel(documento.tipoDocumento)}
+          {t.admin.form.documentTypes[typeIndex[documento.tipoDocumento]] ??
+            documento.tipoDocumento}
         </span>
       </Link>
       <div className="flex flex-1 flex-col p-4">
@@ -86,21 +106,32 @@ export function DocumentCard({ documento, highlight, editTo, onEdit }: DocumentC
         <div className="mt-auto flex flex-col gap-1 border-t border-border pt-3 text-xs text-text-muted">
           <div className="flex items-center justify-between gap-2">
             {documento.dataDocumento ? (
-              <time dateTime={documento.dataDocumento} className="flex items-center gap-1" title="Data do documento">
+              <time
+                dateTime={documento.dataDocumento}
+                className="flex items-center gap-1"
+                title={t.document.documentDateTitle}
+              >
                 <Calendar className="h-3 w-3" aria-hidden="true" />
-                {format(new Date(documento.dataDocumento), 'dd/MM/yyyy', { locale: ptBRLocale })}
+                {format(new Date(documento.dataDocumento), 'PP', { locale: dateLocale })}
               </time>
             ) : (
-              <span>Sem data</span>
+              <span>{t.common.noDate}</span>
             )}
             {documento.codigoReferencia && (
               <span className="font-mono">{documento.codigoReferencia}</span>
             )}
           </div>
           {documento.createdAt && (
-            <time dateTime={documento.createdAt} className="flex items-center gap-1" title="Data de publicação">
+            <time
+              dateTime={documento.createdAt}
+              className="flex items-center gap-1"
+              title={t.document.publishedDateTitle}
+            >
               <Clock className="h-3 w-3" aria-hidden="true" />
-              Publicado em {format(new Date(documento.createdAt), 'dd/MM/yyyy', { locale: ptBRLocale })}
+              {t.document.publishedOn.replace(
+                '{date}',
+                format(new Date(documento.createdAt), 'PP', { locale: dateLocale })
+              )}
             </time>
           )}
         </div>
@@ -109,7 +140,6 @@ export function DocumentCard({ documento, highlight, editTo, onEdit }: DocumentC
   );
 }
 
-
 function getDocumentThumbnail(documento: Documento) {
   const capa = isGeneratedSeedCover(documento.capa) ? null : documento.capa;
   const arquivos = documento.arquivos?.filter((arquivo) => !isGeneratedSeedCover(arquivo)) || [];
@@ -117,7 +147,14 @@ function getDocumentThumbnail(documento: Documento) {
   const firstImage = arquivos.find((arquivo) => isDisplayableImage(arquivo));
   const firstFile = arquivos[0];
 
-  return capa?.url || thumbnail?.url || firstImage?.url || firstFile?.thumbnailUrl || firstFile?.url || null;
+  return (
+    capa?.url ||
+    thumbnail?.url ||
+    firstImage?.url ||
+    firstFile?.thumbnailUrl ||
+    firstFile?.url ||
+    null
+  );
 }
 
 function isDisplayableImage(arquivo: Arquivo) {

@@ -16,7 +16,6 @@ import { lazy, Suspense } from 'react';
 import { Loading } from '@/shared/components/Loading';
 import { CreateButton } from '@/features/admin/components/CreateButton';
 import { TipoDocumento } from '@/shared/types';
-import ptBR from '@/shared/i18n/pt-BR';
 import { useRecentSearches } from '@/shared/hooks/useRecentSearches';
 import { trackEvent } from '@/shared/lib/analytics';
 import { useLocale } from '@/shared/i18n';
@@ -27,20 +26,24 @@ const DocumentFormModal = lazy(() =>
   }))
 );
 
-const tiposDocumento: { value: TipoDocumento | ''; label: string }[] = [
-  { value: '', label: 'Todos' },
-  { value: 'ata', label: 'Ata' },
-  { value: 'relatorio', label: 'Relatório' },
-  { value: 'correspondencia', label: 'Correspondência' },
-  { value: 'fotografia', label: 'Fotografia' },
-  { value: 'documento_administrativo', label: 'Documento administrativo' },
-  { value: 'producao_academica', label: 'Produção acadêmica' },
-  { value: 'documento_pedagogico', label: 'Documento pedagógico' },
-  { value: 'outro', label: 'Outro' },
-];
-
 export function SearchPage() {
   const { t } = useLocale();
+  const tiposDocumento: { value: TipoDocumento | ''; label: string }[] = [
+    { value: '', label: t.search.documentTypeAll },
+    ...t.admin.form.documentTypes.map((label, index) => ({
+      value: [
+        'ata',
+        'relatorio',
+        'correspondencia',
+        'fotografia',
+        'documento_administrativo',
+        'producao_academica',
+        'documento_pedagogico',
+        'outro',
+      ][index] as TipoDocumento,
+      label,
+    })),
+  ];
   const [searchParams, setSearchParams] = useSearchParams();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -142,12 +145,12 @@ export function SearchPage() {
     <>
       <SEO title={t.search.title} />
       <main id="main-content" className="container-page py-6">
-        <Breadcrumb items={[{ label: ptBR.navigation.collection }]} />
+        <Breadcrumb items={[{ label: t.navigation.collection }]} />
 
         <div className="mb-6">
           <div className="mb-4 flex items-center justify-between">
             <h1 className="section-title">{t.search.title}</h1>
-            {canEdit && <CreateButton onClick={openDocumentCreate} label="Documento" />}
+            {canEdit && <CreateButton onClick={openDocumentCreate} label={t.home.documentCreate} />}
           </div>
           <form
             onSubmit={(e) => {
@@ -175,11 +178,15 @@ export function SearchPage() {
                 onChange={(e) => setInputQ(e.target.value)}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => window.setTimeout(() => setShowSuggestions(false), 120)}
-                placeholder={ptBR.navigation.searchPlaceholder}
+                placeholder={t.navigation.searchPlaceholder}
                 className="input pl-10"
-                aria-label={ptBR.navigation.searchPlaceholder}
+                aria-label={t.navigation.searchPlaceholder}
                 aria-autocomplete="list"
-                aria-controls="search-suggestions"
+                aria-controls={
+                  showSuggestions && inputQ.trim() && suggestions.length > 0
+                    ? 'search-suggestions'
+                    : undefined
+                }
                 autoComplete="off"
               />
               {showSuggestions && inputQ.trim() && suggestions.length > 0 && (
@@ -209,7 +216,7 @@ export function SearchPage() {
               )}
             </div>
             <Button type="submit" variant="primary" isLoading={isLoading}>
-              {ptBR.common.search}
+              {t.common.search}
             </Button>
           </form>
           {recentSearches.length > 0 && (
@@ -299,7 +306,7 @@ export function SearchPage() {
                       onChange={(e) => updateParam('categoria', e.target.value)}
                       className="input"
                     >
-                      <option value="">Todas as categorias</option>
+                      <option value="">{t.search.allCategories}</option>
                       {categories?.map((cat) => (
                         <option key={cat.id} value={cat.slug}>
                           {cat.nome}
@@ -317,7 +324,7 @@ export function SearchPage() {
                       type="text"
                       value={tag}
                       onChange={(e) => updateParam('tag', e.target.value)}
-                      placeholder="Ex: fundação"
+                      placeholder={t.search.tagPlaceholder}
                       className="input"
                     />
                   </div>
@@ -381,7 +388,7 @@ export function SearchPage() {
                   hasFilters ? (
                     <button type="button" onClick={clearFilters} className="btn-secondary">
                       <X className="h-4 w-4" aria-hidden="true" />
-                      Limpar filtros
+                      {t.search.clearFiltersAction}
                     </button>
                   ) : undefined
                 }

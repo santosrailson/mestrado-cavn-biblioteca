@@ -2,11 +2,13 @@
 
 import logging
 
+from django.conf import settings
 from django.core.files.base import ContentFile
+from django.db import transaction
 from django.utils import timezone
 from PIL import Image
 
-from apps.core.constants import DocumentStatus, ProcessingStatus
+from apps.core.constants import AntivirusStatus, DocumentStatus, ProcessingStatus
 from apps.core.utils import calculate_sha256
 from apps.documents.models import Arquivo
 
@@ -15,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 class WorkflowError(Exception):
     """Erro de transição de workflow."""
+
+
+class MalwareDetectedError(Exception):
+    """Arquivo rejeitado por diagnóstico de malware."""
 
 
 class DocumentWorkflowService:
@@ -60,16 +66,25 @@ class DocumentWorkflowService:
 
     @classmethod
     def _transition(cls, document, new_status, user):
-        current = document.status
-        if new_status not in cls.VALID_TRANSITIONS.get(current, []):
-            raise WorkflowError(f"Transição inválida de '{current}' para '{new_status}'.")
-        document.status = new_status
-        if new_status == DocumentStatus.APPROVED:
-            document.aprovado_por = user
-            document.data_aprovacao = timezone.now()
-        # Pass the workflow actor so the audit signal records the correct user.
-        document._audit_user = user
-        document.save()
+        with transaction.atomic():
+            locked_document = type(document).objects.select_for_update().get(pk=document.pk)
+            current = locked_document.status
+            if new_status not in cls.VALID_TRANSITIONS.get(current, []):
+                raise WorkflowError(f"Transição inválida de '{current}' para '{new_status}'.")
+            locked_document.status = new_status
+            if new_status == DocumentStatus.APPROVED:
+                locked_document.aprovado_por = user
+                locked_document.data_aprovacao = timezone.now()
+            # Pass the workflow actor so the audit signal records the correct user.
+            locked_document._audit_user = user
+            locked_document.save()
+
+            # Mantém o objeto já carregado pelos ViewSets atualizado para que a
+            # resposta e a camada de testes não observem o estado anterior.
+            document.status = locked_document.status
+            document.aprovado_por_id = locked_document.aprovado_por_id
+            document.data_aprovacao = locked_document.data_aprovacao
+            document.updated_at = locked_document.updated_at
         return document
 
 
@@ -77,6 +92,81 @@ class FileService:
     """Serviços utilitários para processamento de arquivos."""
 
     THUMBNAIL_SIZE = (300, 300)
+
+    @staticmethod
+    def scan_for_malware(arquivo):
+        """Escaneia via daemon configurado e falha fechado quando exigido."""
+
+        if not getattr(settings, "ANTIVIRUS_ENABLED", False):
+            arquivo.antivirus_status = AntivirusStatus.SKIPPED
+            arquivo.antivirus_diagnostico = "scanner desabilitado no ambiente"
+            arquivo.antivirus_escaneado_em = timezone.now()
+            arquivo.save(
+                update_fields=[
+                    "antivirus_status",
+                    "antivirus_diagnostico",
+                    "antivirus_escaneado_em",
+                ]
+            )
+            return
+
+        arquivo.antivirus_status = AntivirusStatus.SCANNING
+        arquivo.save(update_fields=["antivirus_status"])
+        try:
+            import clamd
+
+            client = clamd.ClamdNetworkSocket(
+                host=getattr(settings, "ANTIVIRUS_HOST", "clamav"),
+                port=getattr(settings, "ANTIVIRUS_PORT", 3310),
+                timeout=getattr(settings, "ANTIVIRUS_TIMEOUT_SECONDS", 30),
+            )
+            client.ping()
+            arquivo.arquivo.seek(0)
+            result = client.instream(arquivo.arquivo)
+            arquivo.arquivo.seek(0)
+            status_value, diagnostic = result.get("stream", ("ERROR", "resposta inválida"))
+            if status_value == "FOUND":
+                arquivo.antivirus_status = AntivirusStatus.INFECTED
+                arquivo.antivirus_diagnostico = str(diagnostic or "ameaça detectada")[:500]
+                arquivo.antivirus_escaneado_em = timezone.now()
+                arquivo.arquivo.delete(save=False)
+                arquivo.save(
+                    update_fields=[
+                        "arquivo",
+                        "antivirus_status",
+                        "antivirus_diagnostico",
+                        "antivirus_escaneado_em",
+                    ]
+                )
+                raise MalwareDetectedError(arquivo.antivirus_diagnostico)
+            if status_value != "OK":
+                raise RuntimeError(str(diagnostic or "scanner indisponível"))
+            arquivo.antivirus_status = AntivirusStatus.CLEAN
+            arquivo.antivirus_diagnostico = "OK"
+        except MalwareDetectedError:
+            raise
+        except Exception as exc:
+            arquivo.antivirus_status = AntivirusStatus.UNAVAILABLE
+            arquivo.antivirus_diagnostico = str(exc)[:500]
+            if getattr(settings, "ANTIVIRUS_REQUIRED", False):
+                arquivo.antivirus_escaneado_em = timezone.now()
+                arquivo.save(
+                    update_fields=[
+                        "antivirus_status",
+                        "antivirus_diagnostico",
+                        "antivirus_escaneado_em",
+                    ]
+                )
+                raise RuntimeError("Scanner antivírus obrigatório indisponível") from exc
+            logger.warning("Scanner antivírus indisponível para arquivo %s", arquivo.pk)
+        arquivo.antivirus_escaneado_em = timezone.now()
+        arquivo.save(
+            update_fields=[
+                "antivirus_status",
+                "antivirus_diagnostico",
+                "antivirus_escaneado_em",
+            ]
+        )
 
     @staticmethod
     def calculate_checksum(arquivo):
@@ -132,6 +222,9 @@ class FileService:
                 mime_type=arquivo.mime_type,
                 largura=img.width,
                 altura=img.height,
+                antivirus_status=AntivirusStatus.CLEAN,
+                antivirus_diagnostico="derivado de arquivo já escaneado",
+                antivirus_escaneado_em=timezone.now(),
             )
         except Exception as exc:
             logger.warning(
@@ -177,6 +270,8 @@ def process_uploaded_file(arquivo):
             update_fields=["processamento_status", "processamento_progresso", "processamento_etapa"]
         )
 
+    update_progress(5, "verificando antivírus")
+    FileService.scan_for_malware(arquivo)
     update_progress(10, "detectando formato")
     FileService.detect_mime_type(arquivo)
     update_progress(30, "calculando checksum")

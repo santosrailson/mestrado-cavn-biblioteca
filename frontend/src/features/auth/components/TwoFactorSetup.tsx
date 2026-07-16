@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '@/shared/lib/api';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 function svgToBase64PngUrl(svg: string): string {
   // O backend já gera SVG seguro, mas nunca confiamos em HTML injetado.
@@ -18,18 +18,21 @@ interface TwoFactorData {
 }
 
 export function TwoFactorSetup() {
+  const { t } = useLocale();
   const [data, setData] = useState<TwoFactorData | null>(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
 
   useEffect(() => {
-    api.get('/auth/2fa/status/')
+    api
+      .get('/auth/2fa/status/')
       .then((res) => setData(res.data))
-      .catch(() => setError('Erro ao carregar status 2FA'))
+      .catch(() => setError(t.auth.twoFactorStatusError))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t.auth.twoFactorStatusError]);
 
   const handleSetup = async () => {
     setError('');
@@ -44,7 +47,7 @@ export function TwoFactorSetup() {
         twofactorAtiva: false,
       }));
     } catch {
-      setError('Erro ao gerar chave 2FA');
+      setError(t.auth.twoFactorSetupError);
     } finally {
       setLoading(false);
     }
@@ -53,12 +56,13 @@ export function TwoFactorSetup() {
   const handleVerify = async () => {
     setError('');
     try {
-      await api.post('/auth/2fa/verify-setup/', { token });
+      const response = await api.post('/auth/2fa/verify-setup/', { token });
       setData((prev) => ({ ...prev!, twofactorAtiva: true }));
-      setSuccess('2FA ativado com sucesso!');
+      setRecoveryCodes(response.data.codigosRecuperacao ?? []);
+      setSuccess(t.auth.twoFactorSuccess);
       setToken('');
     } catch {
-      setError('Token inválido. Tente novamente.');
+      setError(t.auth.twoFactorInvalid);
     }
   };
 
@@ -67,20 +71,18 @@ export function TwoFactorSetup() {
     try {
       await api.post('/auth/2fa/disable/');
       setData({ twofactorAtiva: false });
-      setSuccess('2FA desativado.');
+      setSuccess(t.auth.twoFactorDisabled);
     } catch {
-      setError('Erro ao desativar 2FA');
+      setError(t.auth.twoFactorDisableError);
     }
   };
 
-  if (loading) return <p className="text-sm text-text-muted">{ptBR.common.loading}</p>;
+  if (loading) return <p className="text-sm text-text-muted">{t.common.loading}</p>;
   if (!data) return null;
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-text">
-        Autenticação de Dois Fatores (2FA)
-      </h3>
+      <h3 className="text-lg font-semibold text-text">{t.auth.twoFactorTitle}</h3>
 
       {error && (
         <div className="rounded-lg border border-danger-border bg-danger-bg p-3 text-sm text-danger-text">
@@ -93,33 +95,45 @@ export function TwoFactorSetup() {
         </div>
       )}
 
+      {recoveryCodes.length > 0 && (
+        <div
+          className="space-y-3 rounded-lg border border-warning-border bg-warning-bg p-4 text-sm"
+          role="alert"
+        >
+          <h4 className="font-semibold text-warning-text">{t.auth.twoFactorRecoveryCodesTitle}</h4>
+          <p className="text-warning-text">{t.auth.twoFactorRecoveryCodesWarning}</p>
+          <ul
+            className="grid gap-1 font-mono sm:grid-cols-2"
+            aria-label={t.auth.twoFactorRecoveryCode}
+          >
+            {recoveryCodes.map((code) => (
+              <li key={code}>{code}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {data.twofactorAtiva ? (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-success" />
-            <span className="text-sm text-text">2FA está ativo</span>
+            <span className="text-sm text-text">{t.auth.twoFactorActive}</span>
           </div>
-          <button
-            type="button"
-            onClick={handleDisable}
-            className="btn-secondary text-sm"
-          >
-            Desativar 2FA
+          <button type="button" onClick={handleDisable} className="btn-secondary text-sm">
+            {t.auth.twoFactorDisable}
           </button>
         </div>
       ) : data.qrCodeSvg ? (
         <div className="space-y-4">
-          <p className="text-sm text-text-muted">
-            Escaneie o QR code com seu aplicativo autenticador (Google Authenticator, Authy, etc.)
-          </p>
+          <p className="text-sm text-text-muted">{t.auth.twoFactorScanInstructions}</p>
           <img
             src={svgToBase64PngUrl(data.qrCodeSvg)}
-            alt="QR code para configurar autenticação de dois fatores"
+            alt={t.auth.twoFactorSetupInstructions}
             className="mx-auto w-56"
           />
           <div>
             <label className="label" htmlFor="2fa-token">
-              Código de verificação
+              {t.auth.twoFactorVerificationCode}
             </label>
             <input
               id="2fa-token"
@@ -138,20 +152,14 @@ export function TwoFactorSetup() {
             disabled={token.length !== 6}
             className="btn-primary"
           >
-            Verificar e ativar
+            {t.auth.twoFactorVerifyAndActivate}
           </button>
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-sm text-text-muted">
-            Proteja sua conta com autenticação de dois fatores.
-          </p>
-          <button
-            type="button"
-            onClick={handleSetup}
-            className="btn-primary"
-          >
-            Configurar 2FA
+          <p className="text-sm text-text-muted">{t.auth.twoFactorProtectDescription}</p>
+          <button type="button" onClick={handleSetup} className="btn-primary">
+            {t.auth.twoFactorConfigure}
           </button>
         </div>
       )}

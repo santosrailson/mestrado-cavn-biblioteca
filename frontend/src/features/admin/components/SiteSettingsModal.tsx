@@ -5,7 +5,7 @@ import { Button } from '@/shared/components/Button';
 import { Input } from '@/shared/components/Input';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 interface SiteSettingsModalProps {
   isOpen: boolean;
@@ -14,6 +14,7 @@ interface SiteSettingsModalProps {
 
 export function SiteSettingsModal({ isOpen, onClose }: SiteSettingsModalProps) {
   const queryClient = useQueryClient();
+  const { t } = useLocale();
   const [titulo, setTitulo] = useState('');
   const [subtitulo, setSubtitulo] = useState('');
 
@@ -50,14 +51,14 @@ export function SiteSettingsModal({ isOpen, onClose }: SiteSettingsModalProps) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Configurações do site"
+      title={t.settings.title}
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            {ptBR.common.cancel}
+            {t.common.cancel}
           </Button>
           <Button variant="primary" onClick={handleSubmit} isLoading={saveMutation.isPending}>
-            {ptBR.common.save}
+            {t.common.save}
           </Button>
         </div>
       }
@@ -67,13 +68,13 @@ export function SiteSettingsModal({ isOpen, onClose }: SiteSettingsModalProps) {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Título do site"
+            label={t.settings.labels['site.titulo']}
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
           />
           <div>
             <label htmlFor="site-subtitle" className="label">
-              Subtítulo do site
+              {t.settings.labels['site.subtitulo']}
             </label>
             <textarea
               id="site-subtitle"

@@ -5,7 +5,7 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin
 
-from apps.users.models import PrivacyRequest, User
+from apps.users.models import PrivacyRequest, TwoFactorRecoveryCode, User
 
 
 class UserAdmin(ModelAdmin, BaseUserAdmin):
@@ -41,6 +41,10 @@ class UserAdmin(ModelAdmin, BaseUserAdmin):
                 ),
             },
         ),
+        (
+            _("Segurança"),
+            {"fields": ("auth_token_version",)},
+        ),
         (_("Datas importantes"), {"fields": ("last_login", "date_joined")}),
     )
     add_fieldsets = (
@@ -73,9 +77,37 @@ class PrivacyRequestAdmin(ModelAdmin):
     list_filter = ["tipo", "status", "criado_em"]
     search_fields = ["usuario__email", "usuario__first_name", "usuario__last_name", "descricao"]
     readonly_fields = ["id", "usuario", "tipo", "descricao", "criado_em", "atualizado_em"]
-    fields = readonly_fields + ["status", "resposta", "resolvido_em", "resolvido_por"]
+    fields = readonly_fields + [
+        "status",
+        "resposta",
+        "base_legal",
+        "responsavel",
+        "decisao_motivo",
+        "prazo_em",
+        "resolvido_em",
+        "resolvido_por",
+    ]
 
     def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(TwoFactorRecoveryCode)
+class TwoFactorRecoveryCodeAdmin(ModelAdmin):
+    """Permite auditoria sem exibir o conteúdo dos códigos."""
+
+    list_display = ["usuario", "criado_em", "usado_em"]
+    list_filter = ["usado_em", "criado_em"]
+    search_fields = ["usuario__email"]
+    readonly_fields = ["id", "usuario", "codigo_hash", "criado_em", "usado_em"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False
 
     def has_delete_permission(self, request, obj=None):

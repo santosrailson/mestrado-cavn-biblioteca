@@ -17,30 +17,23 @@ import { CreateButton } from '@/features/admin/components/CreateButton';
 import { EditButton } from '@/features/admin/components/EditButton';
 import { AcademicProductionFormModal } from '@/features/admin/components/AcademicProductionFormModal';
 import { ProducaoAcademica, TipoProducaoAcademica, PaginatedResponse } from '@/shared/types';
-import ptBR from '@/shared/i18n/pt-BR';
-
-const tiposProducao: { value: TipoProducaoAcademica | ''; label: string }[] = [
-  { value: '', label: 'Todos' },
-  { value: 'dissertacao', label: 'Dissertação' },
-  { value: 'tese', label: 'Tese' },
-  { value: 'artigo', label: 'Artigo' },
-  { value: 'tcc', label: 'TCC' },
-  { value: 'livro', label: 'Livro' },
-  { value: 'capitulo', label: 'Capítulo' },
-  { value: 'outro', label: 'Outro' },
-];
-
-const TIPO_LABELS: Record<TipoProducaoAcademica, string> = {
-  dissertacao: 'Dissertação',
-  tese: 'Tese',
-  artigo: 'Artigo',
-  tcc: 'TCC',
-  livro: 'Livro',
-  capitulo: 'Capítulo',
-  outro: 'Outro',
-};
+import { useLocale } from '@/shared/i18n';
 
 export function AcademicPage() {
+  const { t } = useLocale();
+  const productionTypes: TipoProducaoAcademica[] = [
+    'dissertacao',
+    'tese',
+    'artigo',
+    'tcc',
+    'livro',
+    'capitulo',
+    'outro',
+  ];
+  const tiposProducao: { value: TipoProducaoAcademica | ''; label: string }[] = [
+    { value: '', label: t.academic.types[0] },
+    ...productionTypes.map((value, index) => ({ value, label: t.academic.types[index + 1] })),
+  ];
   const [searchParams, setSearchParams] = useSearchParams();
   const tipo = (searchParams.get('tipo') as TipoProducaoAcademica | '') || '';
   const ano = searchParams.get('ano') || '';
@@ -83,15 +76,15 @@ export function AcademicPage() {
 
   return (
     <>
-      <SEO title={ptBR.academic.title} />
+      <SEO title={t.academic.title} />
       <main id="main-content">
         <Section ariaLabelledby="academic-title">
-          <Breadcrumb items={[{ label: ptBR.navigation.academic }]} className="mb-6" />
+          <Breadcrumb items={[{ label: t.navigation.academic }]} className="mb-6" />
 
           <SectionHeader
-            title={ptBR.academic.title}
+            title={t.academic.title}
             titleId="academic-title"
-            subtitle={ptBR.academic.subtitle}
+            subtitle={t.academic.subtitle}
             centered
             action={
               canEdit ? (
@@ -100,7 +93,7 @@ export function AcademicPage() {
                     setEditingProducao(null);
                     setModalOpen(true);
                   }}
-                  label="Produção"
+                  label={t.academic.productionCreate}
                 />
               ) : undefined
             }
@@ -110,7 +103,7 @@ export function AcademicPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label htmlFor="academic-type" className="label">
-                  {ptBR.academic.type}
+                  {t.academic.type}
                 </label>
                 <select
                   id="academic-type"
@@ -127,40 +120,40 @@ export function AcademicPage() {
               </div>
               <div>
                 <label htmlFor="academic-year" className="label">
-                  {ptBR.academic.year}
+                  {t.academic.year}
                 </label>
                 <input
                   id="academic-year"
                   type="number"
                   value={ano}
                   onChange={(e) => updateParam('ano', e.target.value)}
-                  placeholder="Ex: 2024"
+                  placeholder={t.academic.yearPlaceholder}
                   className="input"
                 />
               </div>
               <div>
                 <label htmlFor="academic-author" className="label">
-                  {ptBR.academic.author}
+                  {t.academic.author}
                 </label>
                 <input
                   id="academic-author"
                   type="text"
                   value={autor}
                   onChange={(e) => updateParam('autor', e.target.value)}
-                  placeholder="Nome do autor"
+                  placeholder={t.academic.authorPlaceholder}
                   className="input"
                 />
               </div>
               <div>
                 <label htmlFor="academic-search" className="label">
-                  {ptBR.common.search}
+                  {t.common.search}
                 </label>
                 <input
                   id="academic-search"
                   type="search"
                   value={q}
                   onChange={(e) => updateParam('q', e.target.value)}
-                  placeholder="Título, palavra-chave"
+                  placeholder={t.academic.searchPlaceholder}
                   className="input"
                 />
               </div>
@@ -177,10 +170,7 @@ export function AcademicPage() {
           {error && <ErrorMessage onRetry={refetch} />}
 
           {!isLoading && producoes && producoes.dados.length === 0 && (
-            <EmptyState
-              title="Nenhuma produção acadêmica encontrada"
-              description="Tente ajustar os filtros ou cadastrar uma nova produção."
-            />
+            <EmptyState title={t.academic.emptyTitle} description={t.academic.emptyDescription} />
           )}
 
           {!isLoading && producoes && producoes.dados.length > 0 && (
@@ -226,14 +216,15 @@ function AcademicCard({
   canEdit?: boolean;
   onEdit?: () => void;
 }) {
+  const { t } = useLocale();
   const { toast } = useToast();
 
   const handleCopyCitation = async () => {
     try {
       await navigator.clipboard.writeText(producao.citacaoAbnt || '');
-      toast('Citação copiada para a área de transferência.', 'success');
+      toast(t.academic.citationCopied, 'success');
     } catch {
-      toast('Não foi possível copiar a citação.', 'error');
+      toast(t.academic.citationCopyError, 'error');
     }
   };
 
@@ -241,7 +232,7 @@ function AcademicCard({
     <Card className={`relative flex h-full flex-col ${canEdit ? 'pt-10' : ''}`}>
       {canEdit && onEdit && (
         <div className="absolute right-3 top-3">
-          <EditButton onClick={onEdit} label="Editar" />
+          <EditButton onClick={onEdit} label={t.admin.edit} />
         </div>
       )}
       <div className="mb-3 flex items-start justify-between">
@@ -253,25 +244,29 @@ function AcademicCard({
           )}
         </div>
         <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          {TIPO_LABELS[producao.tipo] ?? producao.tipo}
+          {t.academic.types[
+            ['dissertacao', 'tese', 'artigo', 'tcc', 'livro', 'capitulo', 'outro'].indexOf(
+              producao.tipo
+            ) + 1
+          ] ?? producao.tipo}
         </span>
       </div>
       <h3 className="mb-2 text-lg font-semibold text-text">{producao.titulo}</h3>
       <div className="mb-3 space-y-1 text-sm text-[var(--color-text-muted)]">
         <p>
-          <strong>{ptBR.academic.author}:</strong> {producao.autor}
+          <strong>{t.academic.author}:</strong> {producao.autor}
         </p>
         {producao.orientador && (
           <p>
-            <strong>Orientador:</strong> {producao.orientador}
+            <strong>{t.academic.advisor}</strong> {producao.orientador}
           </p>
         )}
         <p>
-          <strong>{ptBR.academic.year}:</strong> {producao.ano}
+          <strong>{t.academic.year}:</strong> {producao.ano}
         </p>
         {producao.palavrasChave && (
           <p>
-            <strong>Palavras-chave:</strong> {producao.palavrasChave}
+            <strong>{t.academic.keywords}</strong> {producao.palavrasChave}
           </p>
         )}
       </div>
@@ -289,16 +284,12 @@ function AcademicCard({
             className="btn-primary text-xs no-underline"
           >
             <ExternalLink className="h-3 w-3" aria-hidden="true" />
-            {ptBR.academic.access}
+            {t.academic.access}
           </a>
         )}
         {producao.citacaoAbnt && (
-          <button
-            type="button"
-            onClick={handleCopyCitation}
-            className="btn-outline text-xs"
-          >
-            {ptBR.academic.citation}
+          <button type="button" onClick={handleCopyCitation} className="btn-outline text-xs">
+            {t.academic.citation}
           </button>
         )}
       </div>

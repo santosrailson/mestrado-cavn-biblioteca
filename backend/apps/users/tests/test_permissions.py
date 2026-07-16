@@ -55,10 +55,13 @@ class TestUserPermissions:
             password="SenhaForte123!",
             role=UserRole.ADMINISTRATOR,
         )
-        response = api_client.post("/api/v1/auth/login/", {
-            "email": "admin@teste.br",
-            "password": "SenhaForte123!",
-        })
+        response = api_client.post(
+            "/api/v1/auth/login/",
+            {
+                "email": "admin@teste.br",
+                "password": "SenhaForte123!",
+            },
+        )
         assert response.status_code == 200
         assert "access" in response.data
 
@@ -69,10 +72,13 @@ class TestUserPermissions:
             password="SenhaForte123!",
             role=UserRole.VISITOR,
         )
-        response = api_client.post("/api/v1/auth/login/", {
-            "email": "user@teste.br",
-            "password": "senha_errada",
-        })
+        response = api_client.post(
+            "/api/v1/auth/login/",
+            {
+                "email": "user@teste.br",
+                "password": "senha_errada",
+            },
+        )
         assert response.status_code == 401
 
     def test_logout_clears_session(self, api_client):

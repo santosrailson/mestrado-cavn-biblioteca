@@ -7,17 +7,8 @@ import { Input } from '@/shared/components/Input';
 import { DateInput } from '@/shared/components/DateInput';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { TimelineEvent } from '@/shared/types';
-
-const PRECISION_OPTIONS = [
-  { value: 'dia', label: 'Dia' },
-  { value: 'mes', label: 'Mês' },
-  { value: 'ano', label: 'Ano' },
-  { value: 'decada', label: 'Década' },
-  { value: 'seculo', label: 'Século' },
-  { value: 'desconhecida', label: 'Desconhecida' },
-];
 
 interface TimelineEventFormModalProps {
   isOpen: boolean;
@@ -28,7 +19,11 @@ interface TimelineEventFormModalProps {
 export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEventFormModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
   const isEdit = Boolean(event);
+  const precisionOptions = ['dia', 'mes', 'ano', 'decada', 'seculo', 'desconhecida'].map(
+    (value, index) => ({ value, label: t.admin.form.datePrecisions[index] })
+  );
 
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -93,11 +88,11 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-timeline'] });
       queryClient.invalidateQueries({ queryKey: ['timeline'] });
-      toast(event ? 'Evento atualizado com sucesso.' : 'Evento criado com sucesso.', 'success');
+      toast(t.admin.saveSuccess.replace('{entity}', t.admin.timeline.toLowerCase()), 'success');
       onClose();
     },
     onError: () => {
-      toast('Não foi possível salvar o evento. Tente novamente.', 'error');
+      toast(t.admin.saveFailed, 'error');
     },
   });
 
@@ -111,18 +106,18 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Editar evento' : 'Novo evento'}
+      title={
+        isEdit
+          ? `${t.common.edit} ${t.admin.timeline.toLowerCase()}`
+          : `${t.admin.new} ${t.admin.timeline.toLowerCase()}`
+      }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            {ptBR.common.cancel}
+            {t.common.cancel}
           </Button>
-          <Button
-            variant="primary"
-            onClick={handleSubmit}
-            isLoading={saveMutation.isPending}
-          >
-            {ptBR.common.save}
+          <Button variant="primary" onClick={handleSubmit} isLoading={saveMutation.isPending}>
+            {t.common.save}
           </Button>
         </div>
       }
@@ -132,13 +127,13 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Título *"
+            label={`${t.admin.title} *`}
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
           />
           <div>
             <label htmlFor="event-desc" className="label">
-              Descrição
+              {t.admin.categoryDescription}
             </label>
             <textarea
               id="event-desc"
@@ -148,13 +143,13 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
             />
           </div>
           <DateInput
-            label="Data *"
+            label={`${t.admin.date} *`}
             value={dataEvento}
             onChange={(e) => setDataEvento(e.target.value)}
           />
           <div>
             <label htmlFor="event-precision" className="label">
-              Precisão
+              {t.admin.precision}
             </label>
             <select
               id="event-precision"
@@ -162,7 +157,7 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
               onChange={(e) => setDataPrecisao(e.target.value)}
               className="input"
             >
-              {PRECISION_OPTIONS.map((opt) => (
+              {precisionOptions.map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
@@ -171,7 +166,7 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
           </div>
           <div>
             <label htmlFor="event-document" className="label">
-              Documento relacionado
+              {t.admin.relatedDocument}
             </label>
             <select
               id="event-document"
@@ -179,7 +174,7 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
               onChange={(e) => setDocumentoId(e.target.value)}
               className="input"
             >
-              <option value="">Nenhum</option>
+              <option value="">{t.admin.none}</option>
               {documents?.dados.map((doc) => (
                 <option key={doc.id} value={doc.id}>
                   {doc.titulo}
@@ -188,14 +183,14 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
             </select>
           </div>
           <Input
-            label="Ordem"
+            label={t.admin.order}
             type="number"
             value={String(ordem)}
             onChange={(e) => setOrdem(Number(e.target.value))}
           />
           <div>
             <label htmlFor="event-image" className="label">
-              Imagem de destaque
+              {t.admin.featuredImage}
             </label>
             <input
               id="event-image"
@@ -205,9 +200,7 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
               className="input"
             />
             {imagemDestaque && (
-              <p className="mt-1 text-sm text-[var(--color-text-muted)]">
-                {imagemDestaque.name}
-              </p>
+              <p className="mt-1 text-sm text-[var(--color-text-muted)]">{imagemDestaque.name}</p>
             )}
           </div>
           <label className="flex items-center gap-2">
@@ -216,7 +209,7 @@ export function TimelineEventFormModal({ isOpen, onClose, event }: TimelineEvent
               checked={destaque}
               onChange={(e) => setDestaque(e.target.checked)}
             />
-            <span className="text-sm">Destaque</span>
+            <span className="text-sm">{t.admin.featured}</span>
           </label>
         </form>
       )}

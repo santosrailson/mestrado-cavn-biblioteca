@@ -7,13 +7,14 @@ import { Button } from '@/shared/components/Button';
 import { Card } from '@/shared/components/Card';
 import { Loading } from '@/shared/components/Loading';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Categoria } from '@/shared/types';
 
 export function CategoriesPage() {
   const [editing, setEditing] = useState<Categoria | null>(null);
   const [showModal, setShowModal] = useState(false);
   const queryClient = useQueryClient();
+  const { t } = useLocale();
 
   const {
     data: categories,
@@ -51,10 +52,10 @@ export function CategoriesPage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-slate-900">{ptBR.admin.categories}</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{t.admin.categories}</h1>
         <Button variant="primary" onClick={openCreate}>
           <Plus className="h-4 w-4" aria-hidden="true" />
-          {ptBR.common.create}
+          {t.common.create}
         </Button>
       </div>
 
@@ -62,10 +63,10 @@ export function CategoriesPage() {
         <table className="w-full text-sm">
           <thead className="bg-surface text-left">
             <tr>
-              <th className="px-4 py-3 font-semibold">Nome</th>
-              <th className="px-4 py-3 font-semibold">Descrição</th>
-              <th className="px-4 py-3 font-semibold">Pai</th>
-              <th className="px-4 py-3 font-semibold">Ações</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.name}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.categoryDescription}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.parent}</th>
+              <th className="px-4 py-3 font-semibold">{t.admin.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -80,16 +81,17 @@ export function CategoriesPage() {
                       type="button"
                       onClick={() => openEdit(cat)}
                       className="rounded p-1.5 text-blue-600 hover:bg-blue-50"
+                      aria-label={t.common.edit}
                     >
                       <Edit className="h-4 w-4" aria-hidden="true" />
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm('Deseja excluir esta categoria?'))
-                          deleteMutation.mutate(cat.id);
+                        if (confirm(t.admin.deleteConfirm)) deleteMutation.mutate(cat.id);
                       }}
                       className="rounded p-1.5 text-red-600 hover:bg-red-50"
+                      aria-label={t.common.delete}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>

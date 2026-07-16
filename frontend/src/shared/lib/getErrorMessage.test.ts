@@ -28,8 +28,6 @@ describe('getErrorMessage', () => {
   });
 
   it('retorna o fallback quando o erro não é um AxiosError com resposta', () => {
-    expect(getErrorMessage(new Error('rede fora do ar'), 'Erro genérico.')).toBe(
-      'Erro genérico.'
-    );
+    expect(getErrorMessage(new Error('rede fora do ar'), 'Erro genérico.')).toBe('Erro genérico.');
   });
 });

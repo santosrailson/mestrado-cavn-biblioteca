@@ -16,9 +16,10 @@ import { PhotoFormModal } from '@/features/admin/components/PhotoFormModal';
 import { Foto, Album } from '@/shared/types';
 import { getImageFallbackSrc, LOGO_FALLBACK } from '@/shared/lib/imageFallback';
 import { GALLERY_IMAGE_SIZES } from '@/shared/lib/imageSrcSet';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 export function GalleryPage() {
+  const { t } = useLocale();
   const [searchParams] = useSearchParams();
   const albumSlug = searchParams.get('album') || '';
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -98,27 +99,27 @@ export function GalleryPage() {
 
   return (
     <>
-      <SEO title={ptBR.gallery.title} />
+      <SEO title={t.gallery.title} />
       <main id="main-content">
         <Section ariaLabelledby="gallery-title">
           <Breadcrumb
             items={[
-              { label: ptBR.navigation.gallery, to: '/galeria' },
+              { label: t.navigation.gallery, to: '/galeria' },
               ...(currentAlbum ? [{ label: currentAlbum.titulo }] : []),
             ]}
             className="mb-6"
           />
 
           <SectionHeader
-            title={currentAlbum?.titulo || ptBR.gallery.title}
+            title={currentAlbum?.titulo || t.gallery.title}
             titleId="gallery-title"
-            subtitle={currentAlbum?.descricao || ptBR.gallery.subtitle}
+            subtitle={currentAlbum?.descricao || t.gallery.subtitle}
             centered
             action={
               canEdit ? (
                 <div className="flex gap-2">
-                  <CreateButton onClick={openAlbumCreate} label="Álbum" />
-                  <CreateButton onClick={openPhotoCreate} label="Foto" />
+                  <CreateButton onClick={openAlbumCreate} label={t.gallery.albums} />
+                  <CreateButton onClick={openPhotoCreate} label={t.gallery.photos} />
                 </div>
               ) : undefined
             }
@@ -137,7 +138,7 @@ export function GalleryPage() {
           {!albumSlug && (
             <section className="mb-12" aria-labelledby="albums-title">
               <h2 id="albums-title" className="mb-5 text-xl font-semibold">
-                {ptBR.gallery.albums}
+                {t.gallery.albums}
               </h2>
 
               {albumsLoading && (
@@ -150,8 +151,8 @@ export function GalleryPage() {
 
               {!albumsLoading && albums && albums.length === 0 && (
                 <EmptyState
-                  title="Nenhum álbum"
-                  description="Os álbuns da galeria aparecerão aqui."
+                  title={t.gallery.emptyAlbums}
+                  description={t.home.noCategoriesDescription}
                 />
               )}
 
@@ -166,7 +167,7 @@ export function GalleryPage() {
                         <div className="relative aspect-video overflow-hidden bg-surface-alt">
                           <img
                             src={getImageFallbackSrc(album.capa || album.capaUrl)}
-                            alt={`Capa do álbum ${album.titulo}`}
+                            alt={t.gallery.albumCoverAlt.replace('{title}', album.titulo)}
                             className={
                               album.capa || album.capaUrl
                                 ? 'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105'
@@ -190,13 +191,16 @@ export function GalleryPage() {
                             </p>
                           )}
                           <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                            {album.fotos?.length ?? 0} fotos
+                            {t.gallery.photoCount.replace(
+                              '{count}',
+                              String(album.fotos?.length ?? 0)
+                            )}
                           </p>
                         </div>
                       </Link>
                       {canEdit && (
                         <div className="absolute right-2 top-2">
-                          <EditButton onClick={() => openAlbumEdit(album)} label="Editar" />
+                          <EditButton onClick={() => openAlbumEdit(album)} label={t.admin.edit} />
                         </div>
                       )}
                     </div>
@@ -209,15 +213,15 @@ export function GalleryPage() {
           {albumSlug && currentAlbum && (
             <div className="mb-6 flex items-center justify-between">
               <Link to="/galeria" className="btn-outline text-sm no-underline">
-                {ptBR.gallery.albums}
+                {t.gallery.albums}
               </Link>
             </div>
           )}
 
           {/* Photos */}
-          <section aria-label={ptBR.gallery.photos}>
+          <section aria-label={t.gallery.photos}>
             <h2 id="photos-title" className="mb-5 text-xl font-semibold">
-              {ptBR.gallery.photos}
+              {t.gallery.photos}
             </h2>
 
             {photosLoading && (
@@ -230,8 +234,8 @@ export function GalleryPage() {
 
             {!photosLoading && displayedPhotos.length === 0 && (
               <EmptyState
-                title="Nenhuma foto"
-                description="As fotos cadastradas aparecerão aqui."
+                title={t.gallery.emptyPhotos}
+                description={t.home.noTimelineDescription}
               />
             )}
 
@@ -243,11 +247,14 @@ export function GalleryPage() {
                       type="button"
                       onClick={() => openLightbox(index)}
                       className="group relative w-full overflow-hidden rounded-lg bg-surface-alt text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
-                      aria-label={`Ampliar foto ${photo.legenda || 'da galeria'}`}
+                      aria-label={t.gallery.enlargePhoto.replace(
+                        '{title}',
+                        photo.legenda || t.gallery.galleryPhotoAlt
+                      )}
                     >
                       <img
                         src={getImageFallbackSrc(photo.imagemUrl)}
-                        alt={photo.legenda || 'Foto da galeria'}
+                        alt={photo.legenda || t.gallery.galleryPhotoAlt}
                         className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         loading="lazy"
                         decoding="async"
@@ -264,7 +271,7 @@ export function GalleryPage() {
                     </button>
                     {canEdit && (
                       <div className="absolute right-2 top-2">
-                        <EditButton onClick={() => openPhotoEdit(photo)} label="Editar" />
+                        <EditButton onClick={() => openPhotoEdit(photo)} label={t.admin.edit} />
                       </div>
                     )}
                   </div>
@@ -312,6 +319,7 @@ const FOCUSABLE_SELECTORS =
   'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightboxProps) {
+  const { t } = useLocale();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
@@ -359,7 +367,7 @@ function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightbo
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={ptBR.gallery.lightboxTitle}
+      aria-label={t.gallery.lightboxTitle}
       tabIndex={-1}
       onKeyDown={handleKeyDown}
       onClick={(e) => {
@@ -371,7 +379,7 @@ function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightbo
         type="button"
         onClick={onClose}
         className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-        aria-label={ptBR.common.close}
+        aria-label={t.common.close}
       >
         <X className="h-6 w-6" aria-hidden="true" />
       </button>
@@ -385,7 +393,7 @@ function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightbo
               onPrev();
             }}
             className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            aria-label={ptBR.common.previous}
+            aria-label={t.common.previous}
           >
             <ChevronLeft className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -396,7 +404,7 @@ function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightbo
               onNext();
             }}
             className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            aria-label={ptBR.common.next}
+            aria-label={t.common.next}
           >
             <ChevronRight className="h-6 w-6" aria-hidden="true" />
           </button>
@@ -406,7 +414,7 @@ function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightbo
       <div className="max-h-full max-w-5xl">
         <img
           src={getImageFallbackSrc(photo.imagemUrl)}
-          alt={photo.legenda || 'Foto da galeria'}
+          alt={photo.legenda || t.gallery.galleryPhotoAlt}
           className="max-h-[80vh] w-auto rounded shadow-2xl"
           aria-describedby="lightbox-caption"
           decoding="async"
@@ -416,7 +424,12 @@ function PhotoLightbox({ photo, onClose, onNext, onPrev, hasNext }: PhotoLightbo
               'max-h-[80vh] w-auto rounded bg-white p-8 opacity-90 shadow-2xl';
           }}
         />
-        <div id="lightbox-caption" className="mt-3 text-center text-white" aria-live="polite" aria-atomic="true">
+        <div
+          id="lightbox-caption"
+          className="mt-3 text-center text-white"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           <h3 className="text-lg font-semibold">{photo.legenda}</h3>
         </div>
       </div>

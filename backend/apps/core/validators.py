@@ -105,9 +105,7 @@ def validate_file_mime_type(file):
 
     if mime and mime.lower() in BLOCKED_MIME_TYPES:
         raise ValidationError(
-            _(
-                "Tipo de arquivo %(mime)s não é permitido por questões de segurança."
-            ),
+            _("Tipo de arquivo %(mime)s não é permitido por questões de segurança."),
             params={"mime": mime},
         )
 
@@ -117,9 +115,7 @@ def validate_file_size(file):
     max_size = getattr(settings, "MAX_UPLOAD_SIZE_BYTES", 104857600)  # 100 MB padrão
     if file.size > max_size:
         raise ValidationError(
-            _(
-                "O arquivo excede o tamanho máximo permitido de %(max_size)s bytes."
-            ),
+            _("O arquivo excede o tamanho máximo permitido de %(max_size)s bytes."),
             params={"max_size": max_size},
         )
 
@@ -152,21 +148,15 @@ def validate_archive_safety(file):
             for info in infos:
                 normalized = os.path.normpath(info.filename)
                 if normalized.startswith("..") or os.path.isabs(normalized):
-                    raise ValidationError(
-                        _("Arquivo ZIP contém caminho inseguro.")
-                    )
+                    raise ValidationError(_("Arquivo ZIP contém caminho inseguro."))
                 total_uncompressed += info.file_size
                 total_compressed += max(info.compress_size, 1)
 
             if total_uncompressed > max_uncompressed_size:
-                raise ValidationError(
-                    _("Arquivo ZIP excede o tamanho descompactado permitido.")
-                )
+                raise ValidationError(_("Arquivo ZIP excede o tamanho descompactado permitido."))
 
             if infos and total_uncompressed / total_compressed > max_compression_ratio:
-                raise ValidationError(
-                    _("Arquivo ZIP possui taxa de compressão suspeita.")
-                )
+                raise ValidationError(_("Arquivo ZIP possui taxa de compressão suspeita."))
     except zipfile.BadZipFile as exc:
         raise ValidationError(_("Arquivo ZIP inválido ou corrompido.")) from exc
     finally:

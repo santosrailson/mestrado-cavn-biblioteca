@@ -14,10 +14,10 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { canAdminister, canCurate } from '@/features/auth/lib/permissions';
 import { useToast } from '@/shared/hooks/useToast';
 import { useDebounce } from '@/shared/hooks/useDebounce';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { formatDateBR } from '@/shared/lib/formatDate';
 import { getTipoDocumentoLabel } from '@/shared/lib/documentLabels';
-import { Documento, StatusDocumento } from '@/shared/types';
+import { Documento, StatusDocumento, TipoDocumento } from '@/shared/types';
 import { clsx } from 'clsx';
 
 const statusColors: Record<StatusDocumento, string> = {
@@ -27,15 +27,6 @@ const statusColors: Record<StatusDocumento, string> = {
   rejeitado: 'bg-danger-bg text-danger',
   publicado: 'bg-success-bg text-success',
   arquivado: 'bg-surface-alt text-text-muted',
-};
-
-const statusLabels: Record<StatusDocumento, string> = {
-  rascunho: 'Rascunho',
-  em_revisao: 'Em revisão',
-  aprovado: 'Aprovado',
-  rejeitado: 'Rejeitado',
-  publicado: 'Publicado',
-  arquivado: 'Arquivado',
 };
 
 export function DocumentsPage() {
@@ -49,6 +40,21 @@ export function DocumentsPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLocale();
+  const localizedDocumentTypes = Object.fromEntries(
+    (
+      [
+        'ata',
+        'relatorio',
+        'correspondencia',
+        'fotografia',
+        'documento_administrativo',
+        'producao_academica',
+        'documento_pedagogico',
+        'outro',
+      ] as TipoDocumento[]
+    ).map((value, index) => [value, t.admin.form.documentTypes[index]])
+  ) as Partial<Record<TipoDocumento, string>>;
   const isCurator = canCurate(user);
   const isAdmin = canAdminister(user);
 
@@ -84,13 +90,13 @@ export function DocumentsPage() {
       setSelectedDoc(null);
       toast(
         variables.action === 'rejeitar'
-          ? 'Documento rejeitado com sucesso.'
-          : 'Documento atualizado com sucesso.',
+          ? t.admin.documentRejectedSuccess
+          : t.admin.documentUpdatedSuccess,
         'success'
       );
     },
     onError: () => {
-      toast('Não foi possível executar a ação. Tente novamente.', 'error');
+      toast(t.admin.actionFailed, 'error');
     },
   });
 
@@ -98,10 +104,10 @@ export function DocumentsPage() {
     mutationFn: (slug: string) => adminApi.deleteDocument(slug),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-documents'] });
-      toast('Documento excluído com sucesso.', 'success');
+      toast(t.admin.documentDeleteSuccess, 'success');
     },
     onError: () => {
-      toast('Não foi possível excluir o documento. Tente novamente.', 'error');
+      toast(t.admin.deleteFailed, 'error');
     },
   });
 
@@ -117,10 +123,13 @@ export function DocumentsPage() {
   return (
     <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold text-text">{ptBR.admin.documents}</h1>
+        <h1 className="text-2xl font-bold text-text">{t.admin.documents}</h1>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              aria-hidden="true"
+            />
             <input
               type="search"
               value={search}
@@ -128,9 +137,9 @@ export function DocumentsPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Buscar documentos..."
+              placeholder={t.admin.searchDocuments}
               className="input w-full pl-9 sm:w-64"
-              aria-label="Buscar documentos"
+              aria-label={t.admin.searchDocuments}
             />
             {search && (
               <button
@@ -140,7 +149,7 @@ export function DocumentsPage() {
                   setPage(1);
                 }}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                aria-label="Limpar busca"
+                aria-label={t.admin.clearSearch}
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -148,7 +157,7 @@ export function DocumentsPage() {
           </div>
           <Link to="/admin/documentos/novo" className="btn-primary no-underline">
             <Plus className="h-4 w-4" aria-hidden="true" />
-            {ptBR.admin.newDocument}
+            {t.admin.newDocument}
           </Link>
         </div>
       </div>
@@ -158,11 +167,11 @@ export function DocumentsPage() {
 
       {data && data.dados.length === 0 && !isLoading && (
         <EmptyState
-          title="Nenhum documento encontrado"
+          title={t.admin.noDocuments}
           description={
             debouncedSearch
-              ? 'Tente ajustar os termos da busca ou limpar os filtros.'
-              : 'Comece cadastrando um novo documento no acervo.'
+              ? t.admin.noDocumentsSearchDescription
+              : t.admin.noDocumentsStartDescription
           }
           action={
             debouncedSearch ? (
@@ -175,12 +184,12 @@ export function DocumentsPage() {
                 className="btn-secondary"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
-                Limpar busca
+                {t.admin.clearSearch}
               </button>
             ) : (
               <Link to="/admin/documentos/novo" className="btn-primary no-underline">
                 <Plus className="h-4 w-4" aria-hidden="true" />
-                Novo documento
+                {t.admin.newDocument}
               </Link>
             )
           }
@@ -193,11 +202,11 @@ export function DocumentsPage() {
             <table className="w-full text-sm">
               <thead className="bg-[var(--color-surface)] text-left">
                 <tr>
-                  <th className="px-4 py-3 font-semibold">Título</th>
-                  <th className="px-4 py-3 font-semibold">Tipo</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold">Data</th>
-                  <th className="px-4 py-3 font-semibold">Ações</th>
+                  <th className="px-4 py-3 font-semibold">{t.admin.title}</th>
+                  <th className="px-4 py-3 font-semibold">{t.admin.type}</th>
+                  <th className="px-4 py-3 font-semibold">{t.admin.status}</th>
+                  <th className="px-4 py-3 font-semibold">{t.admin.date}</th>
+                  <th className="px-4 py-3 font-semibold">{t.admin.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -209,7 +218,7 @@ export function DocumentsPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3">
-                      {getTipoDocumentoLabel(doc.tipoDocumento)}
+                      {getTipoDocumentoLabel(doc.tipoDocumento, localizedDocumentTypes)}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
@@ -219,11 +228,14 @@ export function DocumentsPage() {
                             statusColors[doc.status] || statusColors.rascunho
                           )}
                         >
-                          {statusLabels[doc.status] || statusLabels.rascunho}
+                          {t.admin.statuses[doc.status] || t.admin.statuses.rascunho}
                         </span>
                         {doc.status === 'rejeitado' && doc.motivoRejeicao && (
-                          <span className="max-w-[200px] truncate text-xs text-danger" title={doc.motivoRejeicao}>
-                            Motivo: {doc.motivoRejeicao}
+                          <span
+                            className="max-w-[200px] truncate text-xs text-danger"
+                            title={doc.motivoRejeicao}
+                          >
+                            {t.admin.rejectionReason}: {doc.motivoRejeicao}
                           </span>
                         )}
                       </div>
@@ -236,8 +248,8 @@ export function DocumentsPage() {
                             type="button"
                             onClick={() => navigate(`/admin/documentos/${doc.slug}/editar`)}
                             className="rounded p-1.5 text-primary hover:bg-primary/10"
-                            aria-label={ptBR.common.edit}
-                            title={ptBR.common.edit}
+                            aria-label={t.common.edit}
+                            title={t.common.edit}
                           >
                             <Edit className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -249,8 +261,8 @@ export function DocumentsPage() {
                               workflowMutation.mutate({ action: 'submeter', slug: doc.slug })
                             }
                             className="rounded p-1.5 text-warning hover:bg-warning-bg"
-                            aria-label={ptBR.admin.workflow.submit}
-                            title={ptBR.admin.workflow.submit}
+                            aria-label={t.admin.workflow.submit}
+                            title={t.admin.workflow.submit}
                           >
                             <Send className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -263,8 +275,8 @@ export function DocumentsPage() {
                                 workflowMutation.mutate({ action: 'aprovar', slug: doc.slug })
                               }
                               className="rounded p-1.5 text-success hover:bg-success-bg"
-                              aria-label={ptBR.admin.workflow.approve}
-                              title={ptBR.admin.workflow.approve}
+                              aria-label={t.admin.workflow.approve}
+                              title={t.admin.workflow.approve}
                             >
                               <CheckCircle className="h-4 w-4" aria-hidden="true" />
                             </button>
@@ -275,8 +287,8 @@ export function DocumentsPage() {
                                 setShowRejectModal(true);
                               }}
                               className="rounded p-1.5 text-danger hover:bg-danger-bg"
-                              aria-label={ptBR.admin.workflow.reject}
-                              title={ptBR.admin.workflow.reject}
+                              aria-label={t.admin.workflow.reject}
+                              title={t.admin.workflow.reject}
                             >
                               <XCircle className="h-4 w-4" aria-hidden="true" />
                             </button>
@@ -289,8 +301,8 @@ export function DocumentsPage() {
                               workflowMutation.mutate({ action: 'arquivar', slug: doc.slug })
                             }
                             className="rounded p-1.5 text-text-muted hover:bg-surface-alt"
-                            aria-label={ptBR.admin.workflow.archive}
-                            title={ptBR.admin.workflow.archive}
+                            aria-label={t.admin.workflow.archive}
+                            title={t.admin.workflow.archive}
                           >
                             <Archive className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -299,13 +311,13 @@ export function DocumentsPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (confirm('Deseja realmente excluir este documento?')) {
+                              if (confirm(t.admin.confirmDeleteDocument)) {
                                 deleteMutation.mutate(doc.slug);
                               }
                             }}
                             className="rounded p-1.5 text-danger hover:bg-danger-bg"
-                            aria-label={ptBR.common.delete}
-                            title={ptBR.common.delete}
+                            aria-label={t.common.delete}
+                            title={t.common.delete}
                           >
                             <Trash2 className="h-4 w-4" aria-hidden="true" />
                           </button>
@@ -324,11 +336,11 @@ export function DocumentsPage() {
       <Modal
         isOpen={showRejectModal}
         onClose={() => setShowRejectModal(false)}
-        title="Rejeitar documento"
+        title={t.admin.rejectDocument}
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="secondary" onClick={() => setShowRejectModal(false)}>
-              {ptBR.common.cancel}
+              {t.common.cancel}
             </Button>
             <Button
               variant="danger"
@@ -341,13 +353,13 @@ export function DocumentsPage() {
                 })
               }
             >
-              {ptBR.admin.workflow.reject}
+              {t.admin.workflow.reject}
             </Button>
           </div>
         }
       >
         <label htmlFor="reject-reason" className="label">
-          Motivo da rejeição
+          {t.admin.rejectionReason}
         </label>
         <textarea
           id="reject-reason"

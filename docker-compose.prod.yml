@@ -67,10 +67,12 @@ services:
     restart: unless-stopped
     mem_limit: ${BACKEND_MEM_LIMIT:-1g}
     cpus: ${BACKEND_CPUS:-2.0}
-    command: >
-      sh -c "python manage.py migrate --noinput &&
-             python manage.py collectstatic --noinput &&
-             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --worker-class gthread --threads 2 --access-logfile -"
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120 --worker-class gthread --threads 2 --access-logfile -
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG:-False}
@@ -100,6 +102,21 @@ services:
       SENTRY_RELEASE: ${SENTRY_RELEASE:-}
       SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-0.1}
       SENTRY_PROFILES_SAMPLE_RATE: ${SENTRY_PROFILES_SAMPLE_RATE:-0.05}
+      REQUIRE_TOKEN_VERSION: ${REQUIRE_TOKEN_VERSION:-True}
+      MANDATORY_2FA_FOR_PRIVILEGED: ${MANDATORY_2FA_FOR_PRIVILEGED:-True}
+      TWO_FACTOR_ENROLLMENT_TOKEN_LIFETIME_SECONDS: ${TWO_FACTOR_ENROLLMENT_TOKEN_LIFETIME_SECONDS:-600}
+      TWO_FACTOR_LOGIN_CHALLENGE_LIFETIME_SECONDS: ${TWO_FACTOR_LOGIN_CHALLENGE_LIFETIME_SECONDS:-300}
+      TWO_FACTOR_RECOVERY_CODE_COUNT: ${TWO_FACTOR_RECOVERY_CODE_COUNT:-10}
+      USE_X_ACCEL_REDIRECT: ${USE_X_ACCEL_REDIRECT:-True}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      PRIVACY_REQUEST_SLA_DAYS: ${PRIVACY_REQUEST_SLA_DAYS:-15}
+      PRIVACY_DPO_NAME: ${PRIVACY_DPO_NAME:-Responsável institucional pela privacidade}
+      PRIVACY_DPO_EMAIL: ${PRIVACY_DPO_EMAIL:-cavn@ufpb.br}
+      ANTIVIRUS_ENABLED: ${ANTIVIRUS_ENABLED:-False}
+      ANTIVIRUS_REQUIRED: ${ANTIVIRUS_REQUIRED:-False}
+      ANTIVIRUS_HOST: ${ANTIVIRUS_HOST:-clamav}
+      ANTIVIRUS_PORT: ${ANTIVIRUS_PORT:-3310}
+      ANTIVIRUS_TIMEOUT_SECONDS: ${ANTIVIRUS_TIMEOUT_SECONDS:-30}
     volumes:
       - ./backend/media:/app/media
       - ./backend/staticfiles:/app/staticfiles
@@ -115,7 +132,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/v1/health/"]
+      test: ["CMD", "curl", "-fsS", "-H", "X-Forwarded-Proto: https", "http://localhost:8000/api/v1/health/ready/"]
       interval: 15s
       timeout: 5s
       retries: 5
@@ -130,6 +147,11 @@ services:
     mem_limit: ${CELERY_WORKER_MEM_LIMIT:-1g}
     cpus: ${CELERY_WORKER_CPUS:-1.5}
     command: celery -A config worker -l info
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG:-False}
@@ -177,6 +199,11 @@ services:
     mem_limit: ${CELERY_BEAT_MEM_LIMIT:-256m}
     cpus: ${CELERY_BEAT_CPUS:-0.25}
     command: celery -A config beat -l info --pidfile=/tmp/celerybeat.pid
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG:-False}
@@ -224,6 +251,11 @@ services:
     mem_limit: ${FLOWER_MEM_LIMIT:-256m}
     cpus: ${FLOWER_CPUS:-0.25}
     command: celery -A config flower --port=5555 --url-prefix=flower
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: "False"
@@ -262,6 +294,11 @@ services:
         VITE_SITE_URL: ${SITE_URL:-https://bibliotecadigital.cchsa-cavn.tec.br}
     container_name: cavn-frontend
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     mem_limit: ${FRONTEND_MEM_LIMIT:-256m}
     cpus: ${FRONTEND_CPUS:-0.5}
     volumes:

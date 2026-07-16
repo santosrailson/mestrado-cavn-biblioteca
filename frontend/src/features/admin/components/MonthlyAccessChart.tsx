@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { AccessibleDataTable } from '@/shared/components/AccessibleDataTable';
+import { useOptionalLocale } from '@/shared/i18n';
 
 interface AcessoItem {
   mes: string;
@@ -7,20 +8,20 @@ interface AcessoItem {
 }
 
 export function MonthlyAccessChart({ data }: { data: AcessoItem[] }) {
+  const { t } = useOptionalLocale();
   const normalized = (data || []).map((item) => ({
     mes: item.mes || '-',
     acessos: item.acessos || 0,
   }));
 
   if (normalized.length === 0 || normalized.every((d) => d.acessos === 0)) {
-    return <p className="text-sm text-[var(--color-text-muted)]">Nenhum dado disponível.</p>;
+    return <p className="text-sm text-[var(--color-text-muted)]">{t.admin.noData}</p>;
   }
 
   return (
     <div className="w-full" aria-describedby="monthly-access-summary">
       <p id="monthly-access-summary" className="sr-only">
-        Gráfico de barras com a quantidade de acessos por mês. A tabela abaixo contém os mesmos
-        dados.
+        {t.charts.accessesByMonth} {t.charts.sameDataTable}
       </p>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
@@ -28,14 +29,14 @@ export function MonthlyAccessChart({ data }: { data: AcessoItem[] }) {
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
             <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
             <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-            <Tooltip formatter={(value) => [value ?? 0, 'Acessos']} />
+            <Tooltip formatter={(value) => [value ?? 0, t.charts.accesses]} />
             <Bar dataKey="acessos" fill="#0369a1" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       <AccessibleDataTable
-        caption="Acessos mensais"
-        headers={['Mês', 'Acessos']}
+        caption={t.charts.monthlyAccesses}
+        headers={[t.charts.month, t.charts.accesses]}
         rows={normalized.map((item) => [item.mes, item.acessos])}
       />
     </div>

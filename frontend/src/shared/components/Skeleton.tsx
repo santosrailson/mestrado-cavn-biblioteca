@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { useOptionalLocale } from '@/shared/i18n';
 
 interface SkeletonProps {
   className?: string;
@@ -38,13 +39,14 @@ interface SkeletonGridProps {
 }
 
 export function SkeletonGrid({ count = 6, columns = 3, cover = true }: SkeletonGridProps) {
+  const { t } = useOptionalLocale();
   return (
     <div
       className="grid gap-4"
       style={{
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
       }}
-      aria-label="Carregando conteúdo"
+      aria-label={t.common.loadingContent}
       role="status"
     >
       {Array.from({ length: count }).map((_, i) => (
@@ -60,9 +62,17 @@ interface SkeletonTableProps {
 }
 
 export function SkeletonTable({ rows = 5, columns = 5 }: SkeletonTableProps) {
+  const { t } = useOptionalLocale();
   return (
-    <div className="overflow-hidden rounded-lg border border-border" role="status" aria-label="Carregando tabela">
-      <div className="grid gap-px bg-border" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+    <div
+      className="overflow-hidden rounded-lg border border-border"
+      role="status"
+      aria-label={t.common.loadingTable}
+    >
+      <div
+        className="grid gap-px bg-border"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
         {Array.from({ length: columns }).map((_, i) => (
           <div key={`h-${i}`} className="bg-surface p-3">
             <Skeleton className="h-4 w-3/4" />

@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from './Button';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 
 interface PaginationProps {
   page: number;
@@ -9,6 +9,7 @@ interface PaginationProps {
 }
 
 export function Pagination({ page, totalPages, onChange }: PaginationProps) {
+  const { t } = useOptionalLocale();
   if (totalPages <= 1) return null;
 
   const getPages = () => {
@@ -26,13 +27,13 @@ export function Pagination({ page, totalPages, onChange }: PaginationProps) {
   };
 
   return (
-    <nav aria-label="Paginação" className="flex items-center justify-center gap-2 py-6">
+    <nav aria-label={t.common.pagination} className="flex items-center justify-center gap-2 py-6">
       <Button
         variant="ghost"
         size="sm"
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
-        aria-label={ptBR.common.previous}
+        aria-label={t.common.previous}
       >
         <ChevronLeft className="h-4 w-4" aria-hidden="true" />
       </Button>
@@ -54,7 +55,7 @@ export function Pagination({ page, totalPages, onChange }: PaginationProps) {
               size="sm"
               onClick={() => onChange(p)}
               aria-current={p === page ? 'page' : undefined}
-              aria-label={`Página ${p}`}
+              aria-label={t.common.page.replace('{page}', String(p))}
             >
               {p}
             </Button>
@@ -67,7 +68,7 @@ export function Pagination({ page, totalPages, onChange }: PaginationProps) {
         size="sm"
         onClick={() => onChange(page + 1)}
         disabled={page >= totalPages}
-        aria-label={ptBR.common.next}
+        aria-label={t.common.next}
       >
         <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </Button>

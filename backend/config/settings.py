@@ -100,6 +100,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 # =============================================================================
 MIDDLEWARE = [
     "apps.core.middleware.RequestIdMiddleware",
+    "apps.core.metrics.MetricsMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -217,6 +218,12 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = os.getenv("MEDIA_URL", "/media/")
 MEDIA_ROOT = BASE_DIR / os.getenv("MEDIA_ROOT", "media")
+USE_X_ACCEL_REDIRECT = os.getenv("USE_X_ACCEL_REDIRECT", str(not DEBUG)).lower() in (
+    "true",
+    "1",
+    "yes",
+)
+METRICS_TOKEN = os.getenv("METRICS_TOKEN", "")
 
 # =============================================================================
 # Default primary key
@@ -266,7 +273,29 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "AUTH_HEADER_TYPES": ("Bearer",),
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+    "TOKEN_OBTAIN_SERIALIZER": "apps.users.serializers.CavnTokenObtainPairSerializer",
+    "TOKEN_REFRESH_SERIALIZER": "apps.users.serializers.CavnTokenRefreshSerializer",
 }
+REQUIRE_TOKEN_VERSION = os.getenv("REQUIRE_TOKEN_VERSION", str(not DEBUG)).lower() in (
+    "true",
+    "1",
+    "yes",
+)
+
+# 2FA obrigatório para perfis que podem alterar ou publicar o acervo.
+MANDATORY_2FA_FOR_PRIVILEGED = os.getenv(
+    "MANDATORY_2FA_FOR_PRIVILEGED", str(not DEBUG)
+).lower() in ("true", "1", "yes")
+TWO_FACTOR_ENROLLMENT_TOKEN_LIFETIME_SECONDS = int(
+    os.getenv("TWO_FACTOR_ENROLLMENT_TOKEN_LIFETIME_SECONDS", "600")
+)
+TWO_FACTOR_LOGIN_CHALLENGE_LIFETIME_SECONDS = int(
+    os.getenv("TWO_FACTOR_LOGIN_CHALLENGE_LIFETIME_SECONDS", "300")
+)
+TWO_FACTOR_RECOVERY_CODE_COUNT = int(os.getenv("TWO_FACTOR_RECOVERY_CODE_COUNT", "10"))
+PRIVACY_REQUEST_SLA_DAYS = int(os.getenv("PRIVACY_REQUEST_SLA_DAYS", "15"))
+PRIVACY_DPO_NAME = os.getenv("PRIVACY_DPO_NAME", "Responsável institucional pela privacidade")
+PRIVACY_DPO_EMAIL = os.getenv("PRIVACY_DPO_EMAIL", "cavn@ufpb.br")
 
 # =============================================================================
 # CORS
@@ -352,6 +381,18 @@ MAX_ZIP_UNCOMPRESSED_SIZE_BYTES = int(
     os.getenv("MAX_ZIP_UNCOMPRESSED_SIZE_BYTES", str(MAX_UPLOAD_SIZE_BYTES * 3))
 )
 MAX_ZIP_COMPRESSION_RATIO = int(os.getenv("MAX_ZIP_COMPRESSION_RATIO", "100"))
+
+# O scanner é opcional no ambiente local, mas pode ser tornado obrigatório em
+# produção quando um daemon ClamAV isolado estiver disponível na rede interna.
+ANTIVIRUS_ENABLED = os.getenv("ANTIVIRUS_ENABLED", "False").lower() in ("true", "1", "yes")
+ANTIVIRUS_REQUIRED = os.getenv("ANTIVIRUS_REQUIRED", str(not DEBUG)).lower() in (
+    "true",
+    "1",
+    "yes",
+)
+ANTIVIRUS_HOST = os.getenv("ANTIVIRUS_HOST", "clamav")
+ANTIVIRUS_PORT = int(os.getenv("ANTIVIRUS_PORT", "3310"))
+ANTIVIRUS_TIMEOUT_SECONDS = int(os.getenv("ANTIVIRUS_TIMEOUT_SECONDS", "30"))
 
 # =============================================================================
 # E-mail

@@ -1,6 +1,7 @@
 import { useEffect, useState, RefObject } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useOptionalLocale } from '@/shared/i18n';
 
 interface ScrollToTopButtonProps {
   threshold?: number;
@@ -14,6 +15,7 @@ export function ScrollToTopButton({
   className,
 }: ScrollToTopButtonProps) {
   const [visible, setVisible] = useState(false);
+  const { t } = useOptionalLocale();
 
   useEffect(() => {
     const element = containerRef?.current;
@@ -56,7 +58,7 @@ export function ScrollToTopButton({
         visible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none',
         className
       )}
-      aria-label="Voltar ao topo da página"
+      aria-label={t.common.backToTop}
       aria-hidden={!visible}
     >
       <ArrowUp className="h-5 w-5" aria-hidden="true" />

@@ -23,7 +23,7 @@ test.describe('Página inicial', () => {
   test('deve exibir a seção de busca', async ({ page }) => {
     await page.goto('/');
 
-    const searchSection = page.locator('input[placeholder*="Buscar"]').first();
+    const searchSection = page.getByRole('searchbox').first();
     await expect(searchSection).toBeVisible();
   });
 

@@ -1,0 +1,748 @@
+\documentclass[11pt,a4paper]{article}
+
+% -----------------------------------------------------------------------------
+% Relatório técnico do CAVN Digital — fonte editável para o PDF.
+% O documento evita um catálogo de bibliotecas/plugins e descreve a plataforma
+% por suas decisões, capacidades, evidências e implicações institucionais.
+% -----------------------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,left=2.25cm,right=2.25cm,top=2.25cm,bottom=2.35cm,headheight=16pt]{geometry}
+\usepackage{parskip}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage[table]{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+
+\definecolor{CavnBlue}{HTML}{123B56}
+\definecolor{CavnBlue2}{HTML}{1B5B78}
+\definecolor{CavnTeal}{HTML}{087F8C}
+\definecolor{CavnGold}{HTML}{E9A72F}
+\definecolor{CavnInk}{HTML}{1D2730}
+\definecolor{CavnMuted}{HTML}{52616B}
+\definecolor{CavnLight}{HTML}{F1F6F8}
+\definecolor{CavnLightBlue}{HTML}{E6F0F5}
+\definecolor{CavnGreen}{HTML}{E7F5EC}
+\definecolor{CavnAmber}{HTML}{FFF5D9}
+\definecolor{CavnRed}{HTML}{FBE9E8}
+\definecolor{CavnLine}{HTML}{C8D6DD}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=CavnBlue,
+  urlcolor=CavnTeal,
+  citecolor=CavnBlue,
+  pdftitle={Relatório técnico e fundamentos do Repositório Digital CAVN},
+  pdfauthor={CAVN Digital},
+  pdfsubject={Arquitetura, preservação digital, segurança, acessibilidade e desempenho},
+  pdfkeywords={CAVN Digital, ProfEPT, preservação digital, acessibilidade, LGPD, segurança}
+}
+\urlstyle{same}
+\sloppy
+\setlength{\parindent}{0pt}
+\setlist[itemize]{leftmargin=*,itemsep=2pt,topsep=3pt}
+\setlist[enumerate]{leftmargin=*,itemsep=3pt,topsep=3pt}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\titleformat{\section}{\Large\bfseries\color{CavnBlue}}{\thesection}{0.65em}{}
+\titleformat{\subsection}{\large\bfseries\color{CavnBlue2}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{CavnTeal}}{\thesubsubsection}{0.55em}{}
+\titlespacing*{\section}{0pt}{2.2em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1.4em}{0.45em}
+\titlespacing*{\subsubsection}{0pt}{1em}{0.3em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{CAVN Digital}}
+\fancyhead[R]{\small Relatório técnico · ProfEPT}
+\fancyfoot[L]{\small Documento de apoio à dissertação}
+\fancyfoot[R]{\small\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\tcbset{
+  enhanced,
+  breakable,
+  arc=2mm,
+  boxrule=0.45pt,
+  left=7pt,right=7pt,top=7pt,bottom=7pt,
+  fonttitle=\bfseries
+}
+\newtcolorbox{conceptbox}[1][]{colback=CavnLightBlue,colframe=CavnBlue2,#1}
+\newtcolorbox{evidencebox}[1][]{colback=CavnGreen,colframe=CavnTeal,#1}
+\newtcolorbox{attentionbox}[1][]{colback=CavnAmber,colframe=CavnGold,#1}
+\newtcolorbox{limitbox}[1][]{colback=CavnRed,colframe=red!55!black,#1}
+\newtcolorbox{quotebox}[1][]{colback=CavnLight,colframe=CavnLine,#1}
+
+\newcommand{\internal}[1]{\path{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\ok}{\textcolor{CavnTeal}{\textbf{Implementado}}}
+\newcommand{\partialstatus}{\textcolor{CavnGold!80!black}{\textbf{Parcial}}}
+\newcommand{\pendingstatus}{\textcolor{red!65!black}{\textbf{Pendente}}}
+\newcommand{\sourcecite}[1]{\textsuperscript{[#1]}}
+
+\begin{document}
+
+% -----------------------------------------------------------------------------
+% Capa: sem âncora numérica para não duplicar a página inicial do sumário.
+% -----------------------------------------------------------------------------
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tcolorbox}[colback=CavnBlue,colframe=CavnBlue,width=\textwidth,height=6.7cm,valign=center,boxrule=0pt,arc=0mm,left=16pt,right=16pt]
+  {\color{CavnGold}\sffamily\bfseries\large RELATÓRIO TÉCNICO · DOCUMENTO DE APOIO À DISSERTAÇÃO}\par\vspace{0.55cm}
+  {\color{white}\sffamily\bfseries\fontsize{25}{30}\selectfont Relatório técnico e fundamentos do Repositório Digital CAVN}\par\vspace{0.35cm}
+  {\color{white}\sffamily\large Arquitetura, preservação digital, segurança, acessibilidade e desempenho}
+\end{tcolorbox}
+
+\vspace{1.1cm}
+{\color{CavnBlue}\sffamily\bfseries\Large CAVN Digital — CAVN/UFPB}\par
+\vspace{0.3cm}
+{\color{CavnMuted}\large Relatório em linguagem interdisciplinar para o Programa de Mestrado Profissional em Educação Profissional e Tecnológica (ProfEPT).}\par
+
+\vfill
+\begin{tabular}{@{}P{0.26\textwidth}P{0.66\textwidth}@{}}
+  \textbf{Recorte analisado} & Commit \code{3a3cbb0}, ramo \code{agent/final-hardening-accessibility}.\\[4pt]
+  \textbf{Data da análise} & 16 de julho de 2026.\\[4pt]
+  \textbf{Versão do documento} & 1.0 — relatório técnico descritivo, não certificação.\\[4pt]
+  \textbf{Escopo} & Estrutura, características, fundamentos, segurança, acessibilidade, internacionalização, LGPD, desempenho, testes e operação.\\
+\end{tabular}
+
+\vfill
+\begin{tcolorbox}[colback=CavnLight,colframe=CavnLine]
+\textbf{Nota de leitura.} O sistema é tratado como uma infraestrutura sociotécnica de preservação e acesso à memória institucional. Por isso, cada decisão tecnológica é relacionada ao seu efeito sobre a organização do acervo, a mediação pedagógica, a inclusão e a responsabilidade institucional. A descrição deliberadamente não apresenta um inventário de bibliotecas e plugins.
+\end{tcolorbox}
+\end{titlepage}
+
+\hypersetup{pageanchor=true}
+\pagenumbering{roman}
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+% -----------------------------------------------------------------------------
+\section{Resumo executivo}
+
+O CAVN Digital é um repositório digital voltado à preservação, organização e disseminação do acervo histórico do Colégio Agrícola Vidal de Negreiros (CAVN/UFPB). A plataforma integra uma área pública de consulta — com busca, categorias, linha do tempo, galeria e produção acadêmica — a uma área administrativa responsável pela catalogação, revisão, publicação e auditoria dos registros.
+
+Sua importância para a Educação Profissional e Tecnológica não está apenas na disponibilização de páginas na internet. O sistema cria condições para que documentos, imagens, acontecimentos e produções acadêmicas sejam descritos, contextualizados, encontrados e consultados por diferentes públicos. Assim, a tecnologia funciona como uma camada de mediação entre o patrimônio documental, a comunidade escolar e a produção de conhecimento.
+
+\begin{conceptbox}[title=Síntese em uma frase]
+O CAVN Digital transforma um conjunto de materiais históricos em um acervo digital governado: identificável, pesquisável, acessível, protegido e acompanhado por evidências de operação.
+\end{conceptbox}
+
+\subsection*{Principais conclusões}
+
+\begin{itemize}
+  \item A arquitetura separa interface pública, API, regras de domínio, banco de dados, processamento assíncrono, armazenamento e operação. Essa separação reduz acoplamento e permite evoluir o sistema sem misturar consulta pública com tarefas administrativas.
+  \item O ciclo documental possui validação de arquivos, checksum SHA-256, processamento assíncrono, revisão por papéis e publicação controlada. A consequência institucional é uma distinção clara entre material recebido, material em tratamento e material publicado.
+  \item Foram implementados controles técnicos relevantes de segurança: autenticação por sessão protegida, 2FA obrigatório para perfis privilegiados em produção, revogação de tokens, controle por papéis e objetos, proteção de uploads, entrega privada de documentos, CSP, rate limiting, auditoria e backups cifrados.
+  \item A base de acessibilidade é consistente: semântica, skip link, foco visível, teclado, alto contraste, escala de fonte, movimento reduzido, estados de interface, responsividade e internacionalização técnica. A evidência automatizada não equivale, porém, a uma declaração de conformidade WCAG 2.2 AA.
+  \item Existem procedimentos para inventário de dados, solicitações de titulares, retenção, descarte, observabilidade, SLOs, backup e restauração. A aprovação jurídica, a definição institucional do controlador/DPO, os testes com pessoas usuárias reais, leitores de tela, pentest independente e a infraestrutura externa continuam sendo etapas próprias.
+\end{itemize}
+
+\begin{attentionbox}[title=Limite da conclusão]
+Este relatório demonstra uma implementação técnica e suas evidências disponíveis no repositório. Não afirma certificação WCAG, conformidade jurídica com a LGPD, certificação ISO 27001, aprovação ASVS/CIS ou segurança absoluta. Essas conclusões dependem de avaliação humana, decisão institucional e, quando aplicável, auditoria independente.
+\end{attentionbox}
+
+% -----------------------------------------------------------------------------
+\section{Objeto, contexto e método}
+
+\subsection{O problema institucional que o sistema enfrenta}
+
+Acervos históricos de instituições educacionais costumam estar distribuídos em documentos, fotografias, registros administrativos, relatos, produções acadêmicas e materiais cujo valor aumenta quando são relacionados a pessoas, lugares e acontecimentos. Sem descrição consistente, organização e acesso, o acervo pode permanecer invisível para estudantes, docentes, pesquisadores e para a própria instituição.
+
+O CAVN Digital responde a esse problema por meio de quatro funções articuladas:
+
+\begin{enumerate}
+  \item \textbf{preservar}: manter arquivos, metadados, integridade, cópias de segurança e rastreabilidade;
+  \item \textbf{organizar}: aplicar categorias, tags, autores, períodos, tipos e etapas de curadoria;
+  \item \textbf{disseminar}: oferecer busca, visualização, navegação temática e contextualização histórica;
+  \item \textbf{governar}: separar papéis, registrar decisões, acompanhar solicitações e observar a operação.
+\end{enumerate}
+
+\subsection{Pergunta orientadora do relatório}
+
+A pergunta não é somente ``quais tecnologias foram usadas?'', mas: \textit{como as escolhas de estrutura e de controle sustentam a preservação, a mediação educacional, a inclusão e a continuidade do acervo?} Essa abordagem é adequada a uma dissertação do ProfEPT porque conecta o artefato digital às práticas institucionais e aos sujeitos que dele fazem uso.
+
+\subsection{Fontes e procedimento de análise}
+
+Foram consultados:
+
+\begin{itemize}
+  \item o código do backend, frontend, configuração de produção, scripts operacionais e pipeline de integração contínua;
+  \item a documentação interna sobre modelo de ameaças, acessibilidade, usabilidade, LGPD, retenção, observabilidade, SLOs, segurança e roadmap;
+  \item os resultados de testes e quality gates registrados no repositório;
+  \item referências oficiais e normativas sobre preservação digital, metadados, acessibilidade, usabilidade, proteção de dados, segurança e desempenho.
+\end{itemize}
+
+\begin{evidencebox}[title=Como as afirmações foram classificadas]
+\textbf{Implementado} significa que existe código ou procedimento no recorte analisado. \textbf{Evidenciado} significa que há teste, execução ou registro reproduzível. \textbf{Pendente} significa que falta execução, aprovação, infraestrutura, participante ou avaliação independente. Os termos não são intercambiáveis: uma função pode existir sem ter sido validada em produção.
+\end{evidencebox}
+
+\subsection{Recorte temporal e limitações}
+
+O retrato principal corresponde ao commit \code{3a3cbb0}, analisado em 16/07/2026. Alguns documentos operacionais registram evidências de 15/07/2026; quando isso ocorre, a data é indicada. Os dados apresentados são de testes locais ou de pipeline, não de um estudo longitudinal de produção. O relatório também não substitui a inserção de participantes, parecer jurídico ou laudo de segurança.
+
+% -----------------------------------------------------------------------------
+\section{Finalidade e características do CAVN Digital}
+
+\subsection{Públicos e situações de uso}
+
+O desenho atende a dois grandes grupos, com necessidades diferentes:
+
+\begin{longtable}{P{0.21\textwidth}P{0.34\textwidth}P{0.36\textwidth}}
+\toprule
+\textbf{Público} & \textbf{Situação de uso} & \textbf{Resposta do sistema} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Comunidade escolar e público geral & Consultar a história do CAVN, encontrar imagens, eventos, documentos e produções. & Área pública sem autenticação para conteúdos publicados; navegação por busca, temas, categorias, linha do tempo e galeria. \\
+Pesquisador(a) e estudante & Localizar informação por termos, período, tipo, categoria e tags; verificar contexto e dados catalográficos. & Busca textual, filtros, ficha de metadados, visualização de documento e link permanente por registro. \\
+Catalogador(a) & Receber um documento, descrever conteúdo, anexar arquivo e acompanhar processamento. & Formulário administrativo, rascunho, autosalvamento, progresso, validação e recuperação de erros. \\
+Curador(a) & Revisar a qualidade do registro e decidir sua publicação. & Fluxo de estados e segregação de funções; quem cria não aprova/publica o próprio item. \\
+Administrador(a) & Gerir pessoas, configurações, auditoria, segurança e solicitações de privacidade. & Painéis protegidos por perfil, 2FA, trilha de auditoria e centro de solicitações. \\
+\end{longtable}
+
+\subsection{Características funcionais}
+
+\begin{longtable}{P{0.23\textwidth}P{0.39\textwidth}P{0.30\textwidth}}
+\toprule
+\textbf{Característica} & \textbf{Expressão no sistema} & \textbf{Relevância institucional} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Preservação e integridade & Arquivos, OCR e miniaturas; checksum SHA-256; backups cifrados; validação de restauração. & Ajuda a demonstrar que o objeto consultado é o arquivo tratado e que alterações podem ser investigadas. \\
+Contextualização & Categorias hierárquicas, tags, autores, linha do tempo, álbuns e produção acadêmica. & Converte itens isolados em narrativas e relações úteis à memória institucional. \\
+Descoberta & Busca full-text, filtros por tipo/categoria/período/tags e paginação. & Reduz o custo de encontrar informação e amplia o uso do acervo em aulas e pesquisas. \\
+Curadoria & Fluxo \code{rascunho → em revisão → aprovado → publicado → arquivado}. & Torna explícita a responsabilidade editorial e evita publicação acidental. \\
+Transparência operacional & Logs, auditoria, métricas, health checks, SLOs e procedimentos. & Permite acompanhar se o serviço está disponível, se uma ação ocorreu e como responder a incidentes. \\
+Inclusão & Teclado, foco, contraste, fonte, movimento reduzido, alternativas textuais e responsividade. & Amplia a possibilidade de participação de pessoas com diferentes condições de acesso. \\
+\end{longtable}
+
+\subsection{A experiência como parte do acervo}
+
+O documento histórico não é apresentado apenas como um arquivo para download. A interface procura responder perguntas que um visitante naturalmente faria: o que é este item? Quando foi produzido? A que categoria pertence? Que acontecimento se relaciona com ele? Em que formato está disponível? Há uma alternativa visual ou textual? Essa mediação é especialmente importante em contextos educacionais, nos quais o acesso ao material precisa ser acompanhado de orientação e de contexto.
+
+% -----------------------------------------------------------------------------
+\section{Arquitetura e estrutura do sistema}
+
+\subsection{Visão em camadas}
+
+A arquitetura utiliza uma separação entre entrada do público, aplicação web, API, domínios de negócio, dados e operação. O diagrama abaixo é uma representação conceitual; não pretende substituir o desenho detalhado de infraestrutura.
+
+\begin{center}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[
+  node distance=8mm and 9mm,
+  block/.style={draw=CavnBlue2,fill=CavnLightBlue,rounded corners=2pt,minimum height=1.15cm,text width=2.45cm,align=center,font=\sffamily\small},
+  store/.style={draw=CavnTeal,fill=CavnGreen,rounded corners=2pt,minimum height=1.15cm,text width=2.55cm,align=center,font=\sffamily\small},
+  ops/.style={draw=CavnGold!80!black,fill=CavnAmber,rounded corners=2pt,minimum height=1.15cm,text width=2.55cm,align=center,font=\sffamily\small},
+  arrow/.style={-{Latex[length=2mm]},draw=CavnBlue2,line width=0.8pt}
+]
+\node[block] (people) {Pessoas usuárias\\público, pesquisa e equipe};
+\node[block,right=of people] (edge) {HTTPS / Nginx\\entrada e proteção};
+\node[block,right=of edge] (front) {Interface web\\SPA + PWA};
+\node[block,right=of front] (api) {API REST\\contratos e sessões};
+\node[block,right=of api] (domain) {Domínios\\acervo e governança};
+\node[store,below=of domain] (db) {PostgreSQL\\metadados e estados};
+\node[store,left=of db] (media) {Armazenamento\\arquivos privados};
+\node[ops,right=of db] (jobs) {Redis + tarefas\\OCR, miniaturas e filas};
+\node[ops,left=of media] (observe) {Logs, métricas\\backups e alertas};
+\draw[arrow] (people) -- (edge);
+\draw[arrow] (edge) -- (front);
+\draw[arrow] (front) -- (api);
+\draw[arrow] (api) -- (domain);
+\draw[arrow] (domain) -- (db);
+\draw[arrow] (domain) -- (media);
+\draw[arrow] (domain) -- (jobs);
+\draw[arrow] (domain) -- (observe);
+\draw[arrow] (jobs) -- (media);
+\end{tikzpicture}}
+\end{center}
+
+\subsection{Organização do código}
+
+\begin{longtable}{P{0.25\textwidth}P{0.35\textwidth}P{0.30\textwidth}}
+\toprule
+\textbf{Área} & \textbf{Responsabilidade} & \textbf{Efeito da separação} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\internal{backend/apps/documents} & Documentos, arquivos, autores, metadados, busca, workflow e processamento. & Mantém a regra central do acervo concentrada e testável. \\
+\internal{backend/apps/categories} e \internal{backend/apps/tags} & Classificação temática e relações de descoberta. & Permite organizar o acervo sem alterar a estrutura de arquivos. \\
+\internal{backend/apps/timeline}, \internal{backend/apps/gallery} e \internal{backend/apps/academic} & Acontecimentos, imagens e produção acadêmica. & Oferece diferentes portas de entrada para o mesmo patrimônio institucional. \\
+\internal{backend/apps/users} e \internal{backend/apps/audit} & Pessoas, papéis, autenticação, privacidade e rastreabilidade. & Separa identidade, autorização e responsabilização. \\
+\internal{backend/apps/core} e \internal{backend/apps/system_config} & Saúde, métricas, utilitários, dados iniciais e configurações. & Centraliza capacidades transversais e facilita operação por ambiente. \\
+\internal{frontend/src/app} & Rotas, layouts, provedores e proteção de áreas. & Define a experiência pública e administrativa como percursos coerentes. \\
+\internal{frontend/src/features} & Telas e componentes por domínio funcional. & Aproxima a interface da linguagem e das tarefas dos usuários. \\
+\internal{frontend/src/shared} & API, componentes, acessibilidade, estilos, i18n e estados comuns. & Reduz inconsistências e favorece acessibilidade por padrão. \\
+\end{longtable}
+
+\subsection{Percurso de um documento}
+
+\begin{enumerate}
+  \item O(a) catalogador(a) cria ou recupera um rascunho e registra metadados.
+  \item O arquivo é limitado por tamanho, validado por extensão e MIME e submetido a verificações de segurança, incluindo regras para arquivos compactados.
+  \item O sistema calcula o checksum e envia tarefas demoradas para processamento assíncrono, como OCR e miniaturas; o estado e o progresso são comunicados à interface.
+  \item O registro é encaminhado para revisão. A segregação de funções impede que a mesma pessoa que criou o documento execute sua aprovação/publicação.
+  \item Depois de publicado, o conteúdo público é consultável; arquivos privados passam por endpoint autorizado, sem exposição direta da pasta de mídia.
+  \item O item e seus eventos operacionais entram no ciclo de backup, auditoria e revisão de retenção.
+\end{enumerate}
+
+\begin{conceptbox}[title=Por que a arquitetura importa para a memória institucional?]
+Separar metadados, arquivo, revisão, publicação e auditoria permite preservar não só o objeto digital, mas também o contexto de sua entrada no acervo. Em uma dissertação, isso é relevante porque a plataforma não aparece como um repositório neutro: ela materializa escolhas de seleção, descrição, validação, acesso e responsabilidade.
+\end{conceptbox}
+
+% -----------------------------------------------------------------------------
+\section{Fundamentos de preservação, descrição e usabilidade}
+
+\subsection{Modelo de preservação digital}
+
+O modelo de referência OAIS, publicado pelo CCSDS como \textit{Reference Model for an Open Archival Information System}, organiza conceitos e responsabilidades de um sistema de arquivo digital aberto\sourcecite{1}. A arquitetura do CAVN Digital dialoga com esse modelo ao distinguir ingestão, armazenamento/preservação e acesso, além de incluir informação descritiva e gestão. Isso não significa que o sistema seja certificado como OAIS nem que implemente todas as funções de um arquivo nacional; trata-se de uma fundamentação conceitual para ordenar o ciclo de vida.
+
+\begin{longtable}{P{0.22\textwidth}P{0.37\textwidth}P{0.31\textwidth}}
+\toprule
+\textbf{Ideia de preservação} & \textbf{Correspondência no CAVN Digital} & \textbf{Cuidados para a dissertação} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Ingestão & Upload, validação, checksum, metadados, OCR e miniaturas. & O processo técnico deve ser acompanhado de critérios documentais e de decisão sobre o que ingressa. \\
+Preservação & Armazenamento, backups cifrados, trilha de integridade e política de retenção. & Backup local não é, sozinho, preservação de longo prazo; faltam política arquivística e cópia externa comprovada. \\
+Gestão & Papéis, revisão, auditoria, inventário de dados e procedimentos. & A responsabilidade institucional precisa ser formalizada com responsáveis e aprovações. \\
+Acesso & Busca, filtros, visualização, linha do tempo, galeria e área pública. & Acessibilidade, direitos autorais e condições de uso fazem parte do acesso responsável. \\
+\end{longtable}
+
+\subsection{Metadados e interoperabilidade}
+
+O sistema utiliza uma ficha com metadados associados ao vocabulário Dublin Core\sourcecite{2}. O valor desse fundamento é a simplicidade: título, criador, assunto, descrição, data, tipo, formato, identificador, fonte, idioma, relação, cobertura e direitos ajudam a responder quem, o quê, quando, onde, como e sob quais condições um item pode ser usado. A escolha é compatível com o caráter interdisciplinar do acervo e pode facilitar futuras exportações ou integrações\sourcecite{3}.
+
+O uso de Dublin Core não garante qualidade automática. A descrição depende de vocabulário controlado, treinamento, revisão e critérios de preenchimento. A qualidade dos metadados deve ser acompanhada por completude, consistência, clareza e adequação ao público do CAVN.
+
+\subsection{Usabilidade como relação entre tarefa e contexto}
+
+A ISO 9241-11 trata usabilidade como resultado do uso em um contexto, considerando eficácia, eficiência e satisfação\sourcecite{9}. Aplicado ao CAVN Digital, isso significa verificar se uma pessoa consegue encontrar e compreender um documento, não apenas se a página abre. Por esse motivo, o repositório contém um roteiro de teste com tarefas reais: refinar uma busca, abrir um item, localizar formato e data, copiar um link permanente, catalogar um documento, acompanhar um upload e usar a interface por teclado.
+
+\subsection{Princípios do design system}
+
+O \internal{docs/design-system.md} estabelece princípios de clareza, acessibilidade por padrão, progressão segura, reflow até 320 px, estados de carregamento/erro/vazio/sucesso, foco visível, mensagens compreensíveis e não dependência exclusiva de cor. Esses princípios são mais importantes do que a aparência isolada: padronizam a forma como o sistema comunica risco, espera, conclusão e possibilidade de recuperação.
+
+% -----------------------------------------------------------------------------
+\section{Tecnologias e fundamentos de implementação}
+
+Esta seção descreve tecnologias como camadas de responsabilidade. O objetivo é explicar por que cada camada existe e que problema institucional resolve, não fazer um catálogo de componentes de software.
+
+\begin{longtable}{P{0.22\textwidth}P{0.31\textwidth}P{0.37\textwidth}}
+\toprule
+\textbf{Camada tecnológica} & \textbf{Papel no sistema} & \textbf{Justificativa funcional e educacional} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Servidor de aplicação em Python/Django & Regras, autenticação, API, validações, modelos e tarefas administrativas. & Concentra as regras do acervo e permite testá-las independentemente da aparência da interface. \\
+API REST versionada & Comunicação entre a interface e os dados, com contrato OpenAPI. & Separa a experiência do público das regras de negócio e prepara o sistema para outros clientes no futuro. \\
+Interface React/TypeScript com Vite & Site público e área administrativa como aplicação web responsiva. & Organiza percursos de uso, feedbacks de estado e adaptação a diferentes tamanhos de tela. \\
+PWA e service worker & Cache controlado, instalação opcional e tela de indisponibilidade/offline. & Mantém uma experiência mínima quando a conectividade falha, sem prometer acesso a conteúdos que não estejam disponíveis localmente. \\
+PostgreSQL & Dados estruturados, relações, estados e busca textual. & Preserva consistência entre metadados, categorias, autores, usuários e decisões de publicação. \\
+Redis e processamento em fila & Cache e execução assíncrona de OCR, miniaturas e trabalhos demorados. & Evita que uma operação pesada bloqueie a consulta e torna o progresso observável. \\
+Nginx e HTTPS & Entrada, encerramento de TLS, headers, limites e entrega interna de mídia protegida. & Reduz a exposição do backend e protege a comunicação de credenciais e documentos. \\
+Docker Compose & Declaração reproduzível dos serviços de aplicação, banco, cache e workers. & Facilita instalar o mesmo conjunto de responsabilidades em desenvolvimento, teste e produção. \\
+Integração contínua & Lint, migrações, checks, contrato, auditoria, testes, build e E2E. & Transforma qualidade em uma etapa repetível do trabalho, em vez de depender apenas de inspeção manual. \\
+\end{longtable}
+
+\begin{quotebox}[title=Recorte tecnológico]
+Detalhes de bibliotecas, plugins, versões transitórias e geradores não são centrais para o argumento da dissertação e foram omitidos. O foco é a arquitetura, as capacidades observáveis, os fundamentos e as evidências de controle.
+\end{quotebox}
+
+% -----------------------------------------------------------------------------
+\section{Segurança: objetivos, controles e riscos}
+
+\subsection{Objetivos de proteção}
+
+A segurança foi organizada segundo quatro objetivos compreensíveis:
+
+\begin{itemize}
+  \item \textbf{confidencialidade}: somente pessoas e processos autorizados acessam dados restritos;
+  \item \textbf{integridade}: alterações indevidas em arquivos, metadados ou registros de auditoria podem ser prevenidas ou identificadas;
+  \item \textbf{disponibilidade}: o serviço e as cópias de segurança possuem mecanismos de saúde, recuperação e acompanhamento;
+  \item \textbf{responsabilização}: ações administrativas ficam vinculadas a identidade, papel, data, solicitação e trilha de auditoria.
+\end{itemize}
+
+\subsection{Identidade, sessão e privilégios}
+
+O usuário administrativo é identificado por uma sessão baseada em tokens protegidos em cookies \code{HttpOnly}; o JavaScript da página não acessa diretamente o conteúdo desses cookies. A rotação de refresh tokens, a lista de tokens invalidados e a versão de sessão permitem interromper sessões após logout, troca de senha ou eventos de segurança. O lockout após tentativas malsucedidas e o rate limiting reduzem tentativas automatizadas.
+
+Perfis privilegiados devem utilizar 2FA em produção. O fluxo contempla inscrição TOTP, desafio de login, códigos de recuperação armazenados como hash e consumidos uma única vez, rotação e auditoria. Essas medidas reduzem o impacto de uma senha comprometida, mas não eliminam a necessidade de proteção do dispositivo e de revisão periódica de contas.
+
+\subsection{Autorização por papel e por objeto}
+
+A permissão não é decidida apenas pela existência de login. O sistema diferencia administrador, curador e catalogador, verifica a ação e considera o objeto. Uma pessoa pode consultar documentos publicados, mas publicar, administrar usuários, alterar configurações ou baixar arquivo restrito exige autorização específica. A regra de segregação impede que a mesma pessoa que criou um item faça sua aprovação/publicação.
+
+\subsection{Arquivos e fronteiras de confiança}
+
+Uploads são uma fronteira de risco porque podem carregar código malicioso, conteúdo excessivamente grande ou estruturas compactadas abusivas. O CAVN Digital aplica limites, valida extensão e MIME, bloqueia tipos perigosos, verifica caminhos e volume de arquivos compactados, calcula checksum e pode exigir antivírus fail-closed quando o serviço de varredura estiver provisionado. O processamento pesado ocorre de forma assíncrona.
+
+Documentos protegidos são entregues por endpoint autorizado, com resposta privada e encaminhamento interno do Nginx. A pasta de mídia não deve ser tratada como uma URL pública apenas porque o arquivo existe no disco. A implantação ainda precisa confirmar storage privado externo e URLs temporárias assinadas quando esse requisito for adotado.
+
+\subsection{Headers, transporte e configuração}
+
+Em produção, a configuração exige chave secreta e hosts explícitos, força HTTPS/HSTS quando não há exceção autorizada, usa cookies seguros, política de referrer, proteção contra MIME sniffing, bloqueio de framing e CSP. A política de scripts mantém \code{script-src 'self'} sem \code{unsafe-inline}; a política de estilos ainda possui uma dependência externa que deve ser revisada em uma etapa de hardening posterior.
+
+\subsection{Auditoria, backup e resposta}
+
+As ações administrativas são registradas em uma trilha append-only encadeada por SHA-256. O comando \code{audit\_integrity} verifica a cadeia. Os backups de banco, mídia e configuração são cifrados com AES256 via GPG e a restauração exige confirmação explícita. O \internal{scripts/restore\_drill.sh} verifica descriptografia e integridade sem modificar produção; uma restauração completa em infraestrutura real ainda deve ser executada e registrada.
+
+\begin{longtable}{P{0.26\textwidth}P{0.42\textwidth}P{0.20\textwidth}}
+\toprule
+\textbf{Controle} & \textbf{Evidência no recorte} & \textbf{Estado} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Sessões e 2FA & Cookies protegidos, rotação/blacklist, versão de sessão, 2FA obrigatório em produção para perfis privilegiados, recuperação de uso único. & \ok \\
+Autorização & Papéis, permissões por objeto, rotas administrativas protegidas e segregação de publicação. & \ok \\
+Upload seguro & Limites, MIME/extensão, ZIP bomb/path traversal, checksum, processamento assíncrono e hook de antivírus. & \partialstatus \\
+Mídia privada & Endpoint autorizado e encaminhamento interno; storage privado assinado ainda não provisionado. & \partialstatus \\
+Transporte e CSP & HTTPS/HSTS/cookies/headers e script-src sem inline. & \partialstatus \\
+Auditoria & Trilha encadeada, comando de verificação, request ID e revisão de acessos. & \ok \\
+Backup e restauração & Backup cifrado e drill de integridade; restauração completa periódica externa pendente. & \partialstatus \\
+\end{longtable}
+
+\subsection{Referências de segurança e conformidade}
+
+O OWASP ASVS oferece requisitos verificáveis para controles de segurança de aplicações; a versão atual estável deve ser fixada antes de uma avaliação formal\sourcecite{14}. O OWASP Top 10 ajuda a comunicar riscos recorrentes, como controle de acesso quebrado, falhas criptográficas, injeção, configuração insegura e falhas de autenticação\sourcecite{15}. Os CIS Benchmarks fornecem referências de configuração segura para hosts, containers, banco, cache e servidor web\sourcecite{16}. A ISO/IEC 27001 orienta um sistema de gestão de segurança da informação, incluindo riscos, responsabilidades, evidências e melhoria contínua\sourcecite{17}. O NIST CSF 2.0 organiza a governança em Governar, Identificar, Proteger, Detectar, Responder e Recuperar\sourcecite{18}.
+
+Essas referências servem para estruturar uma avaliação; a presença de uma matriz no repositório não equivale a certificação ou auditoria independente.
+
+\begin{limitbox}[title=Risco residual explicitamente registrado]
+Pentest independente, reteste de achados, varredura completa de imagens/segredos/SBOM, revisão do host segundo CIS, antivírus isolado, storage privado externo, SIEM/APM e gestão formal de vulnerabilidades permanecem como itens de validação ou infraestrutura posterior. Não devem ser descritos na dissertação como concluídos apenas porque há um ponto de integração no código.
+\end{limitbox}
+
+% -----------------------------------------------------------------------------
+\section{Acessibilidade e inclusão}
+
+\subsection{Referencial adotado}
+
+As WCAG 2.2 organizam acessibilidade nos princípios perceptível, operável, compreensível e robusto\sourcecite{4}. O nível AA exige os critérios de nível A e AA aplicáveis, mas a própria W3C esclarece que conformidade não substitui avaliação humana nem cobre todas as necessidades\sourcecite{5}. O eMAG 3.1 traduz recomendações de acessibilidade para serviços digitais do governo brasileiro e também destaca que validadores automáticos não são suficientes\sourcecite{7,8}.
+
+\subsection{Recursos implementados}
+
+\begin{longtable}{P{0.25\textwidth}P{0.42\textwidth}P{0.23\textwidth}}
+\toprule
+\textbf{Dimensão} & \textbf{Recurso ou decisão} & \textbf{Benefício esperado} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Percepção & Alto contraste, tema escuro, escala de fonte de 100\% a 200\%, texto alternativo, resumo de gráficos e tabela acessível. & Melhora leitura e compreensão sem depender apenas de cor. \\
+Operação & Skip link, foco visível, navegação por teclado, modal com foco inicial, Escape, contenção de Tab e restauração do foco. & Permite operar sem mouse e reduz perda de contexto. \\
+Compreensão & Rótulos, mensagens de erro, estados de carregamento/vazio/sucesso, progresso e ações de tentativa novamente. & Explica o que ocorreu e o próximo passo. \\
+Robustez & HTML semântico, landmarks, nomes acessíveis, estados ARIA e idioma do documento sincronizado. & Favorece tecnologias assistivas e diferentes agentes de usuário. \\
+Adaptação & Reflow responsivo, suporte a viewport estreita, movimento reduzido e imagens carregadas de forma econômica. & Mantém o uso em dispositivos e condições diversas. \\
+\end{longtable}
+
+\subsection{Evidência automatizada e reproduzível}
+
+O documento interno de validação de acessibilidade registra, em 15/07/2026, 36 testes E2E aprovados, incluindo cinco páginas críticas avaliadas com Axe nas tags WCAG 2.0/2.1/2.2 AA, testes de skip link, foco, alto contraste, movimento reduzido, jornadas de busca por teclado e dois snapshots visuais. A suíte unitária do frontend foi registrada como 59/59, com build e lint aprovados.
+
+Esses testes são uma barreira de regressão: se uma alteração introduzir uma violação detectável, o pipeline pode falhar. Eles não verificam, sozinhos, a experiência de um leitor de tela, a compreensão de uma mensagem, a adequação do foco em todos os fluxos ou a acessibilidade do conteúdo editorial.
+
+\subsection{Validação manual ainda necessária}
+
+\begin{itemize}
+  \item NVDA com Firefox/Chrome e VoiceOver com Safari em landmarks, títulos, formulários, modais, mensagens dinâmicas e upload;
+  \item todos os fluxos públicos e administrativos somente com teclado, incluindo login, 2FA, busca, documento, catálogo, privacidade e logout;
+  \item contraste, zoom de 200\% e reflow em desktop e celular;
+  \item verificação com pessoas com diferentes deficiências, registrando tarefa, barreira, severidade, evidência, correção e reteste.
+\end{itemize}
+
+A W3C recomenda combinar testes de critérios com participação de usuários\sourcecite{6}. O kit interno propõe pelo menos cinco participantes que não tenham participado do desenvolvimento, em desktop e celular, com registro de sucesso, abandono, tempo e satisfação. O protocolo existe; os resultados reais ainda não foram preenchidos.
+
+\begin{attentionbox}[title=Formulação recomendada para a dissertação]
+Use ``o sistema possui uma base técnica de acessibilidade e evidências automatizadas nas páginas críticas''; não use ``o sistema é plenamente conforme à WCAG 2.2 AA'' antes de concluir testes manuais, leitores de tela, conteúdo, fluxos e análise dos resultados com usuários.
+\end{attentionbox}
+
+% -----------------------------------------------------------------------------
+\section{Internacionalização e qualidade do conteúdo}
+
+O sistema mantém português do Brasil como idioma principal e oferece inglês dos Estados Unidos. A escolha do idioma é persistida no navegador e atualiza o atributo de idioma do documento; textos de telas públicas e administrativas possuem uma estrutura de tradução, e componentes legados são sincronizados por uma camada de compatibilidade durante a migração.
+
+Isso representa internacionalização técnica, não necessariamente qualidade editorial completa. A tradução altera rótulos, mensagens, estados de erro e navegação; a revisão linguística precisa verificar terminologia arquivística, nomes institucionais, tom, pluralização, datas, unidades, textos legais e conteúdo vindo do banco de dados.
+
+\begin{longtable}{P{0.27\textwidth}P{0.41\textwidth}P{0.22\textwidth}}
+\toprule
+\textbf{Aspecto} & \textbf{Situação identificada} & \textbf{Próximo controle} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Idioma da interface & Seletor pt-BR/en-US, persistência local e sincronização com o documento. & Testar troca em cada fluxo e em mensagens assíncronas. \\
+Textos legados & Compatibilidade para componentes que ainda importam o objeto-base em português. & Auditoria final de strings fixas e conteúdo administrativo. \\
+Conteúdo editorial & Metadados e textos institucionais podem exigir decisão humana sobre tradução. & Revisão por pessoa com domínio do acervo e do inglês. \\
+Documentos legais & Termos, privacidade e acessibilidade têm implicações jurídicas e de versão. & Revisão formal jurídica e controle de versão aprovado. \\
+\end{longtable}
+
+% -----------------------------------------------------------------------------
+\section{Desempenho, continuidade e qualidade de serviço}
+
+\subsection{Estratégias de desempenho}
+
+O desempenho foi tratado como capacidade de realizar uma tarefa com pouca espera e baixo risco de interrupção. Na interface, rotas secundárias são carregadas sob demanda, imagens usam carregamento tardio e decodificação assíncrona, o CSS é responsivo e o service worker oferece uma experiência mínima offline. Na API, buscas são paginadas, consultas de descoberta podem ser armazenadas em cache, filtros e prefetch reduzem chamadas desnecessárias e tarefas demoradas não bloqueiam a resposta do usuário.
+
+\subsection{Métricas de campo e Core Web Vitals}
+
+O frontend pode coletar, apenas com consentimento e amostragem, métricas como LCP, INP, CLS, FCP e TTFB; o payload não leva conteúdo do documento. A referência Core Web Vitals utiliza, no percentil 75, LCP de até 2,5 s, INP de até 200 ms e CLS de até 0,1 como faixas consideradas boas\sourcecite{20}. Esses valores são metas de experiência web, não uma garantia de que os usuários do CAVN já as atingem.
+
+\begin{longtable}{P{0.18\textwidth}P{0.30\textwidth}P{0.38\textwidth}}
+\toprule
+\textbf{Métrica} & \textbf{O que representa} & \textbf{Leitura para o acervo} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+LCP & Tempo até o maior conteúdo visível. & Indica se a pessoa consegue perceber rapidamente o conteúdo principal da página. \\
+INP & Capacidade de responder às interações. & Indica se filtros, busca, menu e controles de acessibilidade reagem sem atraso excessivo. \\
+CLS & Estabilidade visual durante o carregamento. & Evita que botões, títulos ou resultados mudem de lugar enquanto o acervo é carregado. \\
+TTFB/FCP & Resposta inicial do servidor e primeiro conteúdo. & Ajuda a distinguir demora da infraestrutura de demora da interface. \\
+\end{longtable}
+
+\subsection{SLOs e evidência disponível}
+
+Os alvos operacionais documentados em \internal{docs/observability-and-slo.md} são disponibilidade mensal de 99,9\% para readiness, p95 da API abaixo de 300 ms em condições normais, 5xx abaixo de 1\% em janela de 15 minutos, RPO de 24 horas e RTO a confirmar após exercício real.
+
+Em evidência local de 15/07/2026, um smoke test somente leitura realizou 100 requisições concorrentes ao endpoint de liveness: 100 sucessos, p95 de 277,56 ms e máximo de 524,47 ms. O resultado valida o mecanismo e o ambiente de teste; não prova desempenho de produção nem carga representativa do acervo.
+
+\begin{evidencebox}[title=Observabilidade disponível no próprio sistema]
+Liveness separado de readiness; métricas protegidas por token; amostra limitada de p50/p95 por rota sem query string ou dados pessoais; logs com \code{X-Request-ID}; relatório de solicitações LGPD vencidas; e regras documentadas para alertar indisponibilidade, latência, erros, disco, filas, backup e prazos de privacidade.
+\end{evidencebox}
+
+\subsection{Continuidade e recuperação}
+
+O backup diário inclui banco, mídia e configuração, cifrados. O procedimento de restore pede confirmação explícita para evitar sobrescrita acidental. O drill isolado verifica descriptografia e integridade dos artefatos; ainda é necessário executar restauração completa em ambiente autorizado, medir o tempo de recuperação e confirmar o RTO. Alertas, painel, centralização de logs, tracing e notificações externas também não são criados apenas pela existência dos endpoints internos.
+
+% -----------------------------------------------------------------------------
+\section{LGPD, governança de dados e responsabilidade institucional}
+
+\subsection{Inventário e minimização}
+
+O inventário interno distingue dados do acervo, usuários, segurança, analytics e suporte. O sistema orienta que analytics não receba conteúdo de documentos, não use e-mail/IP como identificador de produto e registre novos campos antes do deploy. Analytics depende de consentimento explícito e possui limpeza por idade com confirmação.
+
+\begin{longtable}{P{0.18\textwidth}P{0.27\textwidth}P{0.25\textwidth}P{0.17\textwidth}}
+\toprule
+\textbf{Domínio} & \textbf{Exemplo de dado} & \textbf{Finalidade técnica} & \textbf{Situação} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Acervo & Metadados, arquivos, OCR, miniaturas. & Preservação e consulta. & Política arquivística a aprovar. \\
+Usuários & E-mail, nome, perfil, instituição, avatar. & Autenticação e acesso. & Controle técnico implementado. \\
+Segurança & IP, agente, auditoria. & Prevenção e investigação. & Retenção depende de decisão jurídica. \\
+Analytics & Evento, rota, métricas e propriedades primitivas. & Melhoria de UX e desempenho. & Consentimento e 180 dias por padrão. \\
+Suporte & Mensagens enviadas. & Atendimento. & Retenção e acesso mínimo a definir. \\
+\end{longtable}
+
+\subsection{Atendimento aos direitos dos titulares}
+
+O centro de privacidade permite registrar solicitação autenticada e acompanhar seu estado. O modelo contempla acesso, correção, eliminação, portabilidade, oposição e revogação de consentimento, conforme aplicabilidade. Cada solicitação recebe identificador, timestamps, prazo, responsável, base legal, decisão, motivo e resposta; criação, exportação e atualização entram na auditoria. A exportação exclui senhas e hashes de senha.
+
+\begin{enumerate}
+  \item o titular registra a solicitação e fornece a descrição necessária;
+  \item o sistema calcula o prazo operacional configurado e cria a trilha;
+  \item o responsável administrativo analisa identidade, escopo, base legal e exceções;
+  \item a decisão, a resposta e o responsável são registrados;
+  \item o relatório \code{privacy\_sla\_report --json} apoia a fila de acompanhamento.
+\end{enumerate}
+
+\subsection{O que a implementação técnica não decide}
+
+A LGPD atribui direitos e deveres que não podem ser resolvidos por uma tabela ou por um endpoint isolado\sourcecite{10}. A instituição ainda precisa confirmar controlador, operador(es), encarregado/DPO, canais oficiais, bases legais, prazos, retenção arquivística, exceções de segurança, compartilhamentos, transferências e redação pública. A ANPD regulamenta a atuação do encarregado e a comunicação de incidentes\sourcecite{11,12,13}; esses atos precisam ser incorporados ao processo institucional aplicável.
+
+\begin{limitbox}[title=Revisão jurídica formal pendente]
+A Política de Privacidade, o Termo de Uso e a Declaração de Acessibilidade estão organizados para revisão, mas não devem ser tratados como parecer jurídico aprovado. O pacote interno também solicita validação de direitos autorais, finalidade, bases legais, retenção, operadores, hospedagem, analytics, contato e controle de versões.
+\end{limitbox}
+
+% -----------------------------------------------------------------------------
+\section{Testes, evidências e qualidade da entrega}
+
+\subsection{Quality gates}
+
+O pipeline de integração contínua reúne verificação de lint, migrações sem alterações pendentes, checks de deploy, validação do contrato OpenAPI, auditoria de dependências, testes de backend, testes unitários do frontend, build e testes E2E em Chromium. Os testes E2E utilizam um ambiente de API simulado para que a qualidade da interface não dependa de um backend externo indisponível; isso elimina ruído de infraestrutura no teste, mas não substitui testes integrados com banco, cache, filas, storage e antivírus reais.
+
+\begin{longtable}{P{0.25\textwidth}P{0.38\textwidth}P{0.25\textwidth}}
+\toprule
+\textbf{Evidência} & \textbf{O que verifica} & \textbf{Registro no recorte} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Backend & Regras de domínio, autenticação, permissões, validações, contratos e saúde. & Coleta local: 165 testes; documentação: 164 aprovados e 1 caso condicionado ao PostgreSQL. \\
+Frontend unitário & Componentes, hooks, i18n, estados e comportamentos isolados. & 59/59 registrados em 15/07/2026. \\
+E2E & Jornadas públicas, busca, login administrativo, acessibilidade e estados. & 36/36 registrados em 15/07/2026. \\
+Visual & Home e busca vazia, para detectar deslocamentos e alterações não intencionais. & 2 snapshots aprovados no registro local. \\
+Carga smoke & Endpoint somente leitura, concorrência controlada e percentis. & 100/100 sucessos; p95 local 277,56 ms. \\
+Contrato e qualidade & OpenAPI, lint, build, migrações e auditoria no CI. & Quality gates configurados no pipeline. \\
+\end{longtable}
+
+\subsection{Interpretação correta dos resultados}
+
+Testes automatizados respondem a perguntas delimitadas: um comportamento esperado foi preservado? O contrato está coerente? Uma violação automatizável apareceu? O serviço respondeu sob a carga definida? Eles não respondem sozinhos se a descrição histórica é pedagogicamente adequada, se um leitor de tela compreendeu a tela, se a política é juridicamente válida ou se a instituição consegue restaurar o sistema em um incidente real. A dissertação deve apresentar os resultados junto com seu escopo e suas limitações.
+
+% -----------------------------------------------------------------------------
+\section{Matriz de situação: concluído, parcial e pendente}
+
+\begin{longtable}{P{0.25\textwidth}P{0.25\textwidth}P{0.39\textwidth}}
+\toprule
+\textbf{Frente} & \textbf{Situação no commit analisado} & \textbf{Qualificação necessária} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Arquitetura e domínio & \ok & Camadas, módulos, fluxo documental e papéis documentados. \\
+UX/UI & \ok & Design system, estados, progresso, autosalvamento, busca e visualização responsiva implementados. \\
+Acessibilidade automática & \ok & Axe, teclado, foco, contraste, movimento reduzido e regressão visual cobertos em páginas críticas. \\
+Acessibilidade plena & \pendingstatus & Leitores de tela, todos os fluxos, zoom, conteúdo e participantes reais pendentes. \\
+Internacionalização técnica & \ok & pt-BR/en-US e camada de compatibilidade para legados. \\
+Revisão linguística & \pendingstatus & Auditoria editorial formal ainda não realizada. \\
+Segurança de aplicação & \partialstatus & Controles importantes implementados; storage/antivírus operacional, hardening complementar e pentest pendentes. \\
+LGPD operacional & \partialstatus & Inventário, retenção, consentimento e fluxo de solicitações implementados; DPO, bases e aprovação jurídica pendentes. \\
+Desempenho local & \partialstatus & Métricas, smoke test e SLOs definidos; medição de campo e carga representativa pendentes. \\
+Continuidade & \partialstatus & Backup cifrado e drill de integridade; restore real, offsite e RTO confirmado pendentes. \\
+Observabilidade & \partialstatus & Health, métricas, request ID e regras documentadas; coletor, painéis, alertas e tracing externos pendentes. \\
+Conformidade formal & \pendingstatus & ASVS/CIS/ISO e revisão legal independentes não realizados. \\
+\end{longtable}
+
+\subsection{Etapas prioritárias após este recorte}
+
+Para a conclusão acadêmica e operacional, a sequência mais segura é:
+
+\begin{enumerate}
+  \item completar o estudo com usuários reais e os testes manuais de acessibilidade, registrando evidências e correções;
+  \item submeter textos, bases legais, retenção e responsabilidades a jurídico/DPO e documentar as aprovações;
+  \item realizar avaliação independente de segurança com escopo, evidências, achados, reteste e aceite de risco;
+  \item medir desempenho de campo e carga representativa em ambiente autorizado;
+  \item executar restauração completa e ativar observabilidade externa com alertas, SLOs, RPO e RTO confirmados;
+  \item fazer revisão linguística final e manter as traduções como parte do processo editorial.
+\end{enumerate}
+
+% -----------------------------------------------------------------------------
+\section{Conclusão}
+
+O CAVN Digital apresenta uma base técnica coerente para um repositório digital de memória institucional: a arquitetura organiza responsabilidades; o fluxo de curadoria protege a publicação; os metadados e as relações favorecem descoberta e contextualização; os controles de segurança protegem contas, arquivos e decisões; a acessibilidade amplia as formas de participação; e as métricas, os testes e os procedimentos de backup introduzem uma cultura de evidência.
+
+Para o ProfEPT, o principal resultado não é a adoção de uma tecnologia específica, mas a construção de um ambiente em que patrimônio, educação, gestão e participação pública se articulam. A plataforma pode apoiar práticas pedagógicas, pesquisas sobre a história institucional e o reconhecimento de sujeitos e trajetórias que compõem a formação profissional e tecnológica.
+
+Ao mesmo tempo, a maturidade técnica não deve ser confundida com conformidade automática. Acessibilidade integral precisa incluir pessoas e tecnologias assistivas; LGPD precisa de autoridade institucional e revisão jurídica; segurança precisa de avaliação independente; desempenho e continuidade precisam de observação em condições reais. A contribuição do sistema e da dissertação fica mais forte quando essas fronteiras são declaradas, medidas e acompanhadas por um plano de fechamento.
+
+\begin{conceptbox}[title=Formulação final]
+O CAVN Digital está tecnicamente estruturado para sustentar preservação, acesso e governança do acervo, com evidências automatizadas e procedimentos internos. Sua conclusão como serviço institucional confiável depende da validação humana, jurídica, operacional e independente que permanece explicitamente registrada como próxima etapa.
+\end{conceptbox}
+
+% -----------------------------------------------------------------------------
+\appendix
+\section{Glossário para leitura interdisciplinar}
+
+\begin{longtable}{P{0.19\textwidth}P{0.70\textwidth}}
+\toprule
+\textbf{Termo} & \textbf{Sentido neste relatório} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+API & Interface que permite que a aplicação web troque dados e comandos com o servidor. \\
+Checksum & Resultado de uma função matemática aplicada a um arquivo; permite comparar se o conteúdo mudou. \\
+Cookie HttpOnly & Pequeno dado de sessão que o navegador envia ao servidor, mas não entrega diretamente ao JavaScript da página. \\
+CSP & Política que limita de onde scripts, estilos, imagens e conexões podem ser carregados. \\
+E2E & Teste de ponta a ponta: percorre uma jornada semelhante à de uma pessoa usuária. \\
+FTS & Busca textual em que o sistema indexa e consulta palavras do conteúdo/metadados. \\
+HSTS & Regra que orienta o navegador a usar HTTPS para o domínio. \\
+INP, LCP, CLS & Métricas de interação, carregamento do maior conteúdo e estabilidade visual. \\
+JWT & Formato de token assinado usado para representar uma sessão; no sistema, é transportado em cookies protegidos. \\
+OCR & Reconhecimento óptico de caracteres, que transforma texto em uma imagem em informação pesquisável. \\
+P95 & Percentil 95: 95\% das observações ficam abaixo do valor informado; ajuda a representar a experiência sem esconder a cauda de lentidão. \\
+PWA & Aplicação web progressiva, com recursos de instalação, cache controlado e suporte a situações offline. \\
+RBAC & Controle de acesso baseado em papéis, como administrador, curador e catalogador. \\
+RPO/RTO & RPO é a perda máxima de dados aceitável; RTO é o tempo máximo desejado para recuperar o serviço. \\
+SLO & Objetivo de nível de serviço, como disponibilidade ou latência esperada. \\
+TOTP/2FA & Código temporário baseado em tempo e autenticação com dois fatores, combinando senha com outro fator. \\
+\end{longtable}
+
+\section{Mapa de evidências no repositório}
+
+\begin{longtable}{P{0.36\textwidth}P{0.49\textwidth}}
+\toprule
+\textbf{Fonte interna} & \textbf{Uso no relatório} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\internal{README.md} & Finalidade, funcionalidades públicas/admin, deploy, backup e estrutura geral. \\
+\internal{docs/threat-model.md} & Ativos, ameaças, mitigação e risco residual. \\
+\path{docs/accessibility-}\allowbreak\path{internal-validation.md} & Escopo e resultados da acessibilidade automatizada. \\
+\internal{docs/usability-testing.md} e \internal{docs/usability-test-kit.md} & Roteiro, participantes e métricas de testes com usuários. \\
+\internal{docs/security-assessment-scope.md} e \internal{docs/compliance-review.md} & Controles técnicos e limites da avaliação de segurança/conformidade. \\
+\internal{docs/lgpd-operational-procedure.md} e \internal{docs/data-inventory.md} & Fluxo de titulares, inventário, classificação e minimização. \\
+\internal{docs/legal-review-packet.md} e \internal{docs/retention-and-disposal.md} & Pendências jurídicas, retenção, descarte e preservação. \\
+\internal{docs/observability-and-slo.md} & SLOs, sinais, smoke test local e regras de alerta. \\
+\internal{docs/design-system.md} & Tokens, estados, conteúdo, foco, responsividade e critérios de componentes. \\
+\internal{docs/roadmap-excelencia-plataforma.md} & Matriz de melhorias concluídas e abertas. \\
+\internal{backend/config/settings.py} e \internal{backend/config/urls.py} & Configuração de segurança, serviços, API, saúde e métricas. \\
+\internal{backend/apps/documents} e \internal{backend/apps/users} & Regras de acervo, upload, workflow, autenticação, 2FA e privacidade. \\
+\internal{frontend/src/app}, \internal{frontend/src/shared} & Rotas, experiência pública/admin, acessibilidade, i18n, estados e Web Vitals. \\
+\internal{scripts/load\_smoke.py}, \internal{scripts/backup.sh} e \internal{scripts/restore\_drill.sh} & Carga segura, backup cifrado e validação de integridade. \\
+\internal{.github/workflows/ci.yml} & Quality gates de backend, frontend, contrato, auditoria, build e E2E. \\
+\end{longtable}
+
+% -----------------------------------------------------------------------------
+\clearpage
+\section*{Referências}
+\addcontentsline{toc}{section}{Referências}
+
+As referências abaixo foram consultadas em 16 jul. 2026. Foram priorizadas fontes normativas, governamentais e organizações responsáveis pelos próprios referenciais. Os links são mantidos no PDF para facilitar a conferência da versão consultada.
+
+\begin{enumerate}[label={\textbf{[\arabic*]}}]
+  \item CCSDS. \textit{Reference Model for an Open Archival Information System (OAIS)}. CCSDS 650.0-M-3, 2024. Disponível em: \url{https://ccsds.org/searchpubs/entry/3054/}.
+  \item DCMI. \textit{DCMI Metadata Terms}. Dublin Core Metadata Initiative. Disponível em: \url{https://www.dublincore.org/specifications/dublin-core/dcmi-terms/}.
+  \item DCMI. \textit{Using Dublin Core}. Dublin Core Metadata Initiative. Disponível em: \url{https://www.dublincore.org/specifications/dublin-core/usageguide/}.
+  \item W3C. \textit{Web Content Accessibility Guidelines (WCAG) 2.2}. W3C Recommendation. Disponível em: \url{https://www.w3.org/TR/WCAG22/}.
+  \item W3C. \textit{Testing and Evaluating Web Accessibility}. Disponível em: \url{https://www.w3.org/WAI/test-evaluate/}.
+  \item W3C. \textit{Involving Users in Evaluating Web Accessibility}. Disponível em: \url{https://www.w3.org/WAI/test-evaluate/involving-users/}.
+  \item BRASIL. Governo Digital. \textit{Modelo de Acessibilidade em Governo Eletrônico — eMAG}. Disponível em: \url{https://www.gov.br/governodigitallogin/pt-br/acessibilidade-e-usuario/acessibilidade-digital/modelo-de-acessibilidade}.
+  \item BRASIL. Governo Digital. \textit{eMAG 3.1 — Modelo de Acessibilidade em Governo Eletrônico}. Disponível em: \url{https://emag.governoeletronico.gov.br/}.
+  \item ISO. \textit{ISO 9241-11:2018 — Ergonomics of human-system interaction — Part 11: Usability}. Disponível em: \url{https://www.iso.org/standard/63500.html}.
+  \item BRASIL. \textit{Lei nº 13.709, de 14 de agosto de 2018 — Lei Geral de Proteção de Dados Pessoais}. Disponível em: \url{https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm}.
+  \item ANPD. \textit{Direitos dos titulares}. Disponível em: \url{https://www.gov.br/anpd/pt-br/assuntos/titular-de-dados-1/direito-dos-titulares}.
+  \item ANPD. \textit{ANPD lança guia sobre atuação do encarregado}. Disponível em: \url{https://www.gov.br/anpd/pt-br/assuntos/noticias/anpd-lanca-guia-sobre-atuacao-do-encarregado}.
+  \item ANPD. \textit{ANPD aprova o Regulamento de Comunicação de Incidente de Segurança}. Disponível em: \url{https://www.gov.br/anpd/pt-br/assuntos/noticias/anpd-aprova-o-regulamento-de-comunicacao-de-incidente-de-seguranca}.
+  \item OWASP. \textit{Application Security Verification Standard (ASVS)}. Disponível em: \url{https://owasp.org/www-project-application-security-verification-standard/}.
+  \item OWASP. \textit{OWASP Top 10:2021}. Disponível em: \url{https://owasp.org/Top10/2021/}.
+  \item CIS. \textit{CIS Benchmarks Overview}. Center for Internet Security. Disponível em: \url{https://www.cisecurity.org/cis-benchmarks-overview}.
+  \item ISO. \textit{ISO/IEC 27001:2022 — Information security management systems}. Disponível em: \url{https://www.iso.org/standard/27001}.
+  \item NIST. \textit{The NIST Cybersecurity Framework (CSF) 2.0}. Disponível em: \url{https://www.nist.gov/cyberframework}.
+  \item NIST. \textit{Digital Identity Guidelines: Authentication and Authenticator Management — SP 800-63B-4}. 2025. Disponível em: \url{https://www.nist.gov/publications/nist-sp-800-63b-4digital-identity-guidelines-authentication-and-authenticator}.
+  \item web.dev. \textit{Web Vitals}. Google. Disponível em: \url{https://web.dev/articles/vitals?hl=en}.
+  \item OpenAPI Initiative. \textit{OpenAPI Specification}. Disponível em: \url{https://spec.openapis.org/oas/}.
+\end{enumerate}
+
+\begin{quotebox}[title=Observação sobre referências internas]
+Os documentos do repositório citados no Apêndice constituem evidências de implementação e de planejamento do próprio sistema. As referências externas fundamentam conceitos e critérios; elas não atestam que o CAVN Digital já tenha alcançado cada requisito.
+\end{quotebox}
+
+\end{document}

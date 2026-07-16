@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 interface HeroProps {
   title: string;
@@ -23,6 +23,7 @@ export function Hero({
 }: HeroProps) {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const { t } = useLocale();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,13 +89,13 @@ export function Hero({
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={ptBR.home.searchPlaceholder || 'Buscar no acervo...'}
+                placeholder={t.home.searchPlaceholder}
                 className="input h-12 w-full pl-11 text-base"
-                aria-label="Buscar no acervo"
+                aria-label={t.accessibility.search}
               />
             </div>
             <button type="submit" className="btn-primary h-12 px-8">
-              {ptBR.home.ctaSearch || 'Buscar'}
+              {t.home.ctaSearch}
             </button>
           </form>
         )}

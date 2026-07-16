@@ -277,9 +277,7 @@ class Command(BaseCommand):
             "biblioteca",
         ]
         for nome in nomes:
-            Tag.objects.get_or_create(
-                slug=nome, defaults={"nome": nome.replace("-", " ").title()}
-            )
+            Tag.objects.get_or_create(slug=nome, defaults={"nome": nome.replace("-", " ").title()})
         self.stdout.write("  - Tags criadas")
 
     def _create_authors(self):
@@ -363,15 +361,15 @@ class Command(BaseCommand):
                 data_documento=data_doc,
                 data_precisao=random.choice(precisoes),
                 cobertura_temporal=str(ano),
-                cobertura_espacial=random.choice(
-                    ["Bananeiras, Paraíba", "Campus CAVN", "UFPB"]
-                ),
+                cobertura_espacial=random.choice(["Bananeiras, Paraíba", "Campus CAVN", "UFPB"]),
                 idioma="pt-BR",
                 direitos="Domínio público / CAVN-UFPB",
                 fonte=random.choice(
                     ["Arquivo da Direção do CAVN", "Acervo da Biblioteca", "Arquivo Pessoal"]
                 ),
-                relacao=random.choice(["", "Faz parte do acervo histórico", "Documento relacionado à administração"]),
+                relacao=random.choice(
+                    ["", "Faz parte do acervo histórico", "Documento relacionado à administração"]
+                ),
                 created_by=created_by,
                 aprovado_por=curador if status == DocumentStatus.PUBLISHED else None,
             )

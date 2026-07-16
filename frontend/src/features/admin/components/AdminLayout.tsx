@@ -132,7 +132,7 @@ export function AdminLayout() {
                 }
               >
                 <UserCircle className="h-5 w-5" aria-hidden="true" />
-                Meu perfil
+                {t.admin.profile}
               </NavLink>
               <a
                 href="/"
@@ -140,7 +140,7 @@ export function AdminLayout() {
                 className="mb-1 flex items-center gap-3 rounded px-3 py-2 text-sm font-medium text-white/80 no-underline hover:bg-white/10 hover:text-white"
               >
                 <ExternalLink className="h-5 w-5" aria-hidden="true" />
-                Ver site
+                {t.admin.viewSite}
               </a>
               <button
                 type="button"

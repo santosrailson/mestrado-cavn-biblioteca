@@ -6,6 +6,12 @@ Sistema web completo para preservação, organização e disseminação do acerv
 
 ---
 
+## Documentação técnica
+
+- [Relatório técnico e fundamentos do Repositório Digital CAVN — ProfEPT](docs/relatorio-tecnico-cavn-digital-profept.pdf)
+
+---
+
 ## Tecnologias
 
 | Camada | Tecnologia |

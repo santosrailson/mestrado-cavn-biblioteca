@@ -8,6 +8,9 @@ app_name = "core"
 
 urlpatterns = [
     path("health/", views.HealthCheckView.as_view(), name="health-check"),
+    path("health/live/", views.LiveHealthCheckView.as_view(), name="health-live"),
+    path("health/ready/", views.ReadyHealthCheckView.as_view(), name="health-ready"),
+    path("metrics/", views.MetricsView.as_view(), name="metrics"),
     path("dashboard/", views.DashboardView.as_view(), name="dashboard"),
     path("analytics/vitals/", views.WebVitalsView.as_view(), name="web-vitals"),
     path("analytics/events/", views.AnalyticsEventView.as_view(), name="analytics-event"),

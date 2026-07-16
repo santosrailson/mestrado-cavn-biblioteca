@@ -9,7 +9,7 @@ import { Button } from '@/shared/components/Button';
 import { Input } from '@/shared/components/Input';
 import { Modal } from '@/shared/components/Modal';
 import { Loading } from '@/shared/components/Loading';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 import { Categoria } from '@/shared/types';
 
 const categorySchema = z.object({
@@ -32,6 +32,7 @@ interface CategoryFormModalProps {
 export function CategoryFormModal({ isOpen, onClose, category }: CategoryFormModalProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { t } = useLocale();
   const isEdit = Boolean(category);
 
   const { data: categories, isLoading } = useQuery({
@@ -88,14 +89,11 @@ export function CategoryFormModal({ isOpen, onClose, category }: CategoryFormMod
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
-      toast(
-        category ? 'Categoria atualizada com sucesso.' : 'Categoria criada com sucesso.',
-        'success'
-      );
+      toast(t.admin.saveSuccess.replace('{entity}', t.admin.categories.slice(0, -1)), 'success');
       onClose();
     },
     onError: () => {
-      toast('Não foi possível salvar a categoria. Tente novamente.', 'error');
+      toast(t.admin.saveFailed, 'error');
     },
   });
 
@@ -107,18 +105,22 @@ export function CategoryFormModal({ isOpen, onClose, category }: CategoryFormMod
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEdit ? 'Editar categoria' : 'Nova categoria'}
+      title={
+        isEdit
+          ? `${t.common.edit} ${t.admin.categories.slice(0, -1).toLowerCase()}`
+          : `${t.admin.new} ${t.admin.categories.slice(0, -1).toLowerCase()}`
+      }
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose}>
-            {ptBR.common.cancel}
+            {t.common.cancel}
           </Button>
           <Button
             variant="primary"
             onClick={handleSubmit(onSubmit)}
             isLoading={saveMutation.isPending}
           >
-            {ptBR.common.save}
+            {t.common.save}
           </Button>
         </div>
       }
@@ -127,20 +129,24 @@ export function CategoryFormModal({ isOpen, onClose, category }: CategoryFormMod
         <Loading />
       ) : (
         <form id="category-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <Input label="Nome *" {...register('nome')} error={errors.nome?.message} />
+          <Input label={`${t.admin.name} *`} {...register('nome')} error={errors.nome?.message} />
           <div>
             <label htmlFor="descricao" className="label">
-              Descrição
+              {t.admin.categoryDescription}
             </label>
             <textarea id="descricao" {...register('descricao')} className="input min-h-[80px]" />
           </div>
-          <Input label="Ícone" {...register('icone')} error={errors.icone?.message} />
+          <Input
+            label={t.admin.featuredImage}
+            {...register('icone')}
+            error={errors.icone?.message}
+          />
           <div>
             <label htmlFor="paiId" className="label">
-              Categoria pai
+              {t.admin.parent}
             </label>
             <select id="paiId" {...register('paiId')} className="input">
-              <option value="">Nenhuma</option>
+              <option value="">{t.admin.none}</option>
               {categories
                 ?.filter((c) => c.id !== category?.id)
                 .map((c) => (
@@ -151,14 +157,14 @@ export function CategoryFormModal({ isOpen, onClose, category }: CategoryFormMod
             </select>
           </div>
           <Input
-            label="Ordem"
+            label={t.admin.order}
             type="number"
             {...register('ordem', { valueAsNumber: true })}
             error={errors.ordem?.message}
           />
           <label className="flex items-center gap-2">
             <input type="checkbox" {...register('ativo')} checked={watch('ativo')} />
-            <span className="text-sm">Ativo</span>
+            <span className="text-sm">{t.admin.active}</span>
           </label>
         </form>
       )}

@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet-async';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 import { useSiteConfig } from '@/shared/hooks/useSystemConfig';
 
 interface SEOProps {
@@ -27,10 +27,11 @@ export function SEO({
   modifiedTime,
 }: SEOProps) {
   const { titulo, descricao } = useSiteConfig();
+  const { locale, t } = useOptionalLocale();
   const siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:5173';
-  const siteName = titulo || ptBR.common.siteName;
-  const fullTitle = title ? `${title} | ${siteName}` : titulo || ptBR.seo.defaultTitle;
-  const metaDescription = description || descricao || ptBR.seo.defaultDescription;
+  const siteName = titulo || t.common.siteName;
+  const fullTitle = title ? `${title} | ${siteName}` : titulo || t.seo.defaultTitle;
+  const metaDescription = description || descricao || t.seo.defaultDescription;
   const url = `${siteUrl}${pathname}`;
   const ogImage = image || `${siteUrl}/og-image.png`;
 
@@ -44,7 +45,7 @@ export function SEO({
       <meta property="og:description" content={metaDescription} />
       <meta property="og:url" content={url} />
       <meta property="og:type" content={type} />
-      <meta property="og:locale" content="pt_BR" />
+      <meta property="og:locale" content={locale === 'en-US' ? 'en_US' : 'pt_BR'} />
       <meta property="og:site_name" content={siteName} />
       {ogImage && <meta property="og:image" content={ogImage} />}
       {ogImage && <meta property="og:image:width" content={OG_IMAGE_WIDTH} />}

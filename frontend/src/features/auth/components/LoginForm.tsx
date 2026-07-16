@@ -3,14 +3,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Input } from '@/shared/components/Input';
 import { Button } from '@/shared/components/Button';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
-const loginSchema = z.object({
-  email: z.string().email(ptBR.auth.emailRequired),
-  password: z.string().min(1, ptBR.auth.passwordRequired),
-});
-
-type LoginFormData = z.infer<typeof loginSchema>;
+type LoginFormData = { email: string; password: string };
 
 interface LoginFormProps {
   onSubmit: (data: LoginFormData) => void;
@@ -19,6 +14,11 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
+  const { t } = useLocale();
+  const loginSchema = z.object({
+    email: z.string().email(t.auth.emailRequired),
+    password: z.string().min(1, t.auth.passwordRequired),
+  });
   const {
     register,
     handleSubmit,
@@ -30,14 +30,14 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <Input
-        label={ptBR.auth.email}
+        label={t.auth.email}
         type="email"
         autoComplete="email"
         {...register('email')}
         error={errors.email?.message}
       />
       <Input
-        label={ptBR.auth.password}
+        label={t.auth.password}
         type="password"
         autoComplete="current-password"
         {...register('password')}
@@ -45,11 +45,11 @@ export function LoginForm({ onSubmit, isLoading, error }: LoginFormProps) {
       />
       {error && (
         <p className="rounded bg-red-50 p-2 text-sm text-red-700" role="alert">
-          {ptBR.auth.invalidCredentials}
+          {t.auth.invalidCredentials}
         </p>
       )}
       <Button type="submit" variant="primary" isLoading={isLoading} className="w-full">
-        {ptBR.common.login}
+        {t.common.login}
       </Button>
     </form>
   );

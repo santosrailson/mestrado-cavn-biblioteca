@@ -1,31 +1,36 @@
 import { useState } from 'react';
 import api from '@/shared/lib/api';
 import { useAuthStore } from '@/features/auth/stores/authStore';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useLocale } from '@/shared/i18n';
 
 interface TwoFactorVerifyProps {
-  userId: string;
+  challenge: string;
   email: string;
   onVerified: () => void;
   onCancel: () => void;
 }
 
-export function TwoFactorVerify({ userId, email, onVerified, onCancel }: TwoFactorVerifyProps) {
+export function TwoFactorVerify({ challenge, email, onVerified, onCancel }: TwoFactorVerifyProps) {
   const [token, setToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [useRecovery, setUseRecovery] = useState(false);
   const setAuth = useAuthStore((s) => s.setAuth);
+  const { t } = useLocale();
 
   const handleVerify = async () => {
     setError('');
     setLoading(true);
     try {
-      await api.post('/auth/2fa/login/', { user_id: userId, token });
+      await api.post('/auth/2fa/login/', {
+        twofactorChallenge: challenge,
+        ...(useRecovery ? { recoveryCode: token } : { token }),
+      });
       const me = await api.get('/auth/me/');
       setAuth(me.data);
       onVerified();
     } catch {
-      setError('Código inválido. Tente novamente.');
+      setError(t.auth.twoFactorInvalid);
     } finally {
       setLoading(false);
     }
@@ -34,9 +39,9 @@ export function TwoFactorVerify({ userId, email, onVerified, onCancel }: TwoFact
   return (
     <div className="mx-auto max-w-sm space-y-6">
       <div className="text-center">
-        <h1 className="text-xl font-bold text-text">Autenticação de Dois Fatores</h1>
+        <h1 className="text-xl font-bold text-text">{t.auth.twoFactorTitle}</h1>
         <p className="mt-2 text-sm text-text-muted">
-          Insira o código do seu aplicativo autenticador para {email}
+          {t.auth.twoFactorDescription.replace('{email}', email)}
         </p>
       </div>
 
@@ -48,17 +53,24 @@ export function TwoFactorVerify({ userId, email, onVerified, onCancel }: TwoFact
 
       <div>
         <label className="label" htmlFor="2fa-token-login">
-          Código 2FA
+          {useRecovery ? t.auth.twoFactorRecoveryCode : t.auth.twoFactorCode}
         </label>
         <input
           id="2fa-token-login"
           type="text"
-          inputMode="numeric"
-          maxLength={6}
+          inputMode={useRecovery ? 'text' : 'numeric'}
+          maxLength={useRecovery ? 11 : 6}
+          autoComplete="one-time-code"
           value={token}
-          onChange={(e) => setToken(e.target.value.replace(/\D/g, ''))}
+          onChange={(e) =>
+            setToken(
+              useRecovery
+                ? e.target.value.replace(/[^a-zA-Z0-9-]/g, '').toUpperCase()
+                : e.target.value.replace(/\D/g, '')
+            )
+          }
           className="input text-center text-2xl tracking-[0.5em]"
-          placeholder="000000"
+          placeholder={useRecovery ? t.auth.twoFactorRecoveryPlaceholder : '000000'}
           // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
@@ -68,19 +80,25 @@ export function TwoFactorVerify({ userId, email, onVerified, onCancel }: TwoFact
         <button
           type="button"
           onClick={handleVerify}
-          disabled={token.length !== 6 || loading}
+          disabled={loading || (useRecovery ? token.length < 8 : token.length !== 6)}
           className="btn-primary flex-1"
         >
-          {loading ? ptBR.common.loading : 'Verificar'}
+          {loading ? t.common.loading : t.auth.twoFactorVerify}
         </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="btn-secondary"
-        >
-          {ptBR.common.cancel}
+        <button type="button" onClick={onCancel} className="btn-secondary">
+          {t.common.cancel}
         </button>
       </div>
+      <button
+        type="button"
+        className="text-sm text-primary underline"
+        onClick={() => {
+          setUseRecovery((value) => !value);
+          setToken('');
+        }}
+      >
+        {useRecovery ? t.auth.twoFactorUseAuthenticator : t.auth.twoFactorUseRecovery}
+      </button>
     </div>
   );
 }

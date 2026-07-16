@@ -2,23 +2,23 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FileText, Image as ImageIcon } from 'lucide-react';
 import { DocumentoRelacionado, TipoRelacao } from '@/shared/types';
-import { getImageFallbackState, isGeneratedSeedCoverUrl, LOGO_FALLBACK } from '@/shared/lib/imageFallback';
+import {
+  getImageFallbackState,
+  isGeneratedSeedCoverUrl,
+  LOGO_FALLBACK,
+} from '@/shared/lib/imageFallback';
 import { CARD_IMAGE_SIZES } from '@/shared/lib/imageSrcSet';
-
-const RELACAO_LABELS: Record<TipoRelacao, string> = {
-  relacionado: 'Relacionado',
-  parte_de: 'Parte de',
-  sucede: 'Sucede',
-  precede: 'Precede',
-  referencia: 'Referência',
-};
+import { useLocale } from '@/shared/i18n';
 
 interface RelatedDocumentCardProps {
   documento: DocumentoRelacionado;
 }
 
 export function RelatedDocumentCard({ documento }: RelatedDocumentCardProps) {
-  const rawThumbnail = isGeneratedSeedCoverUrl(documento.thumbnailUrl) ? null : documento.thumbnailUrl || null;
+  const { t } = useLocale();
+  const rawThumbnail = isGeneratedSeedCoverUrl(documento.thumbnailUrl)
+    ? null
+    : documento.thumbnailUrl || null;
   const fallback = getImageFallbackState(rawThumbnail);
   const [imgSrc, setImgSrc] = useState(fallback.imageSrc);
   const [isLogo, setIsLogo] = useState(fallback.isFallback);
@@ -38,7 +38,7 @@ export function RelatedDocumentCard({ documento }: RelatedDocumentCardProps) {
       >
         <img
           src={imgSrc}
-          alt={`Miniatura do documento relacionado: ${documento.titulo}`}
+          alt={t.document.relatedImageAlt.replace('{title}', documento.titulo)}
           className={
             isLogo
               ? 'h-full w-full bg-white object-contain p-8 opacity-90 transition-opacity duration-300 group-hover:opacity-100'
@@ -59,7 +59,7 @@ export function RelatedDocumentCard({ documento }: RelatedDocumentCardProps) {
           ) : (
             <FileText className="h-3 w-3" aria-hidden="true" />
           )}
-          {RELACAO_LABELS[documento.tipoRelacao]}
+          {t.document.relations[documento.tipoRelacao as TipoRelacao]}
         </span>
       </Link>
       <div className="flex flex-1 flex-col p-4">

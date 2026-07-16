@@ -7,7 +7,7 @@ import { Card } from '@/shared/components/Card';
 import { ErrorMessage } from '@/shared/components/ErrorMessage';
 import { Skeleton } from '@/shared/components/Skeleton';
 import { SectionHeader } from '@/shared/components/Section';
-import ptBR from '@/shared/i18n/pt-BR';
+import { useOptionalLocale } from '@/shared/i18n';
 
 const DocumentsByTypeChart = lazy(() =>
   import('../components/DocumentsByTypeChart').then((m) => ({ default: m.DocumentsByTypeChart }))
@@ -17,6 +17,7 @@ const MonthlyAccessChart = lazy(() =>
 );
 
 export function DashboardPage() {
+  const { locale, t } = useOptionalLocale();
   const {
     data: metrics,
     isLoading,
@@ -32,9 +33,9 @@ export function DashboardPage() {
   return (
     <>
       <SectionHeader
-        title={ptBR.admin.dashboard}
+        title={t.admin.dashboard}
         titleId="dashboard-title"
-        subtitle="Visão geral do repositório"
+        subtitle={t.admin.overview}
       />
 
       {isLoading && (
@@ -57,45 +58,45 @@ export function DashboardPage() {
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard
               icon={FileText}
-              label={ptBR.admin.totalDocuments}
+              label={t.admin.totalDocuments}
               value={metrics.totalDocumentos}
-              trend={`+${metrics.documentosMes} ${ptBR.admin.thisMonth}`}
+              trend={`+${metrics.documentosMes} ${t.admin.thisMonth}`}
               color="bg-blue-50 text-blue-700"
             />
             <MetricCard
               icon={Clock}
-              label={ptBR.admin.pendingReview}
+              label={t.admin.pendingReview}
               value={metrics.pendentesRevisao}
-              trend={ptBR.admin.toReview}
+              trend={t.admin.toReview}
               color="bg-yellow-50 text-yellow-700"
               trendVariant="warning"
             />
             <MetricCard
               icon={Users}
-              label={ptBR.admin.totalUsers}
+              label={t.admin.totalUsers}
               value={metrics.totalUsuarios}
-              trend={`+${metrics.usuariosNovos} ${ptBR.admin.newUsers}`}
+              trend={`+${metrics.usuariosNovos} ${t.admin.newUsers}`}
               color="bg-green-50 text-green-700"
             />
             <MetricCard
               icon={Eye}
-              label={ptBR.admin.monthlyAccess}
+              label={t.admin.monthlyAccess}
               value={metrics.acessosMensais?.reduce((acc, cur) => acc + cur.acessos, 0) ?? 0}
-              trend="acumulado"
+              trend={t.admin.accumulated}
               color="bg-purple-50 text-purple-700"
             />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
-              <h2 className="mb-4 text-lg font-semibold">Documentos por tipo</h2>
+              <h2 className="mb-4 text-lg font-semibold">{t.admin.documentsByType}</h2>
               <Suspense fallback={<ChartSkeleton />}>
                 <DocumentsByTypeChart data={metrics.documentosPorTipo ?? []} />
               </Suspense>
             </Card>
 
             <Card>
-              <h2 className="mb-4 text-lg font-semibold">{ptBR.admin.recentActivities}</h2>
+              <h2 className="mb-4 text-lg font-semibold">{t.admin.recentActivities}</h2>
               {metrics.atividadesRecentes && metrics.atividadesRecentes.length > 0 ? (
                 <ul className="space-y-3">
                   {metrics.atividadesRecentes.slice(0, 6).map((activity) => (
@@ -103,24 +104,24 @@ export function DashboardPage() {
                       <Activity className="mt-0.5 h-4 w-4 text-brand-600" aria-hidden="true" />
                       <div>
                         <p className="font-medium text-slate-900">
-                          {activity.usuario?.nome ?? 'Sistema'} — {activity.acao}{' '}
+                          {activity.usuario?.nome ?? t.common.system} — {activity.acao}{' '}
                           {activity.entidade}
                         </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
-                          {new Date(activity.createdAt).toLocaleString('pt-BR')}
+                          {new Date(activity.createdAt).toLocaleString(locale)}
                         </p>
                       </div>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-[var(--color-text-muted)]">Nenhuma atividade recente.</p>
+                <p className="text-sm text-[var(--color-text-muted)]">{t.admin.noRecentActivity}</p>
               )}
             </Card>
           </div>
 
           <Card className="mt-6">
-            <h2 className="mb-4 text-lg font-semibold">{ptBR.admin.monthlyAccess}</h2>
+            <h2 className="mb-4 text-lg font-semibold">{t.admin.monthlyAccess}</h2>
             <Suspense fallback={<ChartSkeleton />}>
               <MonthlyAccessChart data={metrics.acessosMensais ?? []} />
             </Suspense>

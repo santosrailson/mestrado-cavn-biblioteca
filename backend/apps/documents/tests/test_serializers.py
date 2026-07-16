@@ -28,7 +28,9 @@ class TestDocumentSerializers:
 
     def test_cataloguer_sees_own_drafts(self, api_client):
         catalogador = UserFactory(role=UserRole.CATALOGUER)
-        Document.objects.create(titulo="Rascunho", status=DocumentStatus.DRAFT, created_by=catalogador)
+        Document.objects.create(
+            titulo="Rascunho", status=DocumentStatus.DRAFT, created_by=catalogador
+        )
         Document.objects.create(titulo="Publicado", status=DocumentStatus.PUBLISHED)
 
         api_client.force_authenticate(user=catalogador)
@@ -44,10 +46,12 @@ class TestDocumentSerializers:
         assert "titulo" in serializer.errors
 
     def test_write_serializer_accepts_valid_data(self):
-        serializer = DocumentWriteSerializer(data={
-            "titulo": "Documento Teste",
-            "tipo_documento": "ata",
-        })
+        serializer = DocumentWriteSerializer(
+            data={
+                "titulo": "Documento Teste",
+                "tipo_documento": "ata",
+            }
+        )
         assert serializer.is_valid()
 
     def test_detail_view_returns_full_metadata(self, api_client):
@@ -77,8 +81,12 @@ class TestDocumentSerializers:
         assert len(response.data["results"]) == 20
 
     def test_filter_by_tipo_documento(self, api_client):
-        Document.objects.create(titulo="Ata 1", status=DocumentStatus.PUBLISHED, tipo_documento="ata")
-        Document.objects.create(titulo="Foto 1", status=DocumentStatus.PUBLISHED, tipo_documento="fotografia")
+        Document.objects.create(
+            titulo="Ata 1", status=DocumentStatus.PUBLISHED, tipo_documento="ata"
+        )
+        Document.objects.create(
+            titulo="Foto 1", status=DocumentStatus.PUBLISHED, tipo_documento="fotografia"
+        )
 
         response = api_client.get("/api/v1/documentos/?tipo=ata")
         assert response.status_code == 200
