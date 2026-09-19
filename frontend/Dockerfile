@@ -21,7 +21,7 @@ RUN npm run build
 # =============================================================================
 # Estágio de produção com Nginx
 # =============================================================================
-FROM nginx:1.25-alpine
+FROM nginx:1.29-alpine
 
 RUN sed -i 's/user  nginx;/# user  nginx;/' /etc/nginx/nginx.conf
 
